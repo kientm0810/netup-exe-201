@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { API_BASE_URL, apiFetch } from "@/lib/http";
 import { errorMessage } from "@/lib/format";
 
-const fanpageUrl = process.env.NEXT_PUBLIC_NETUP_FACEBOOK_URL ?? "https://www.facebook.com/netup.vn";
+const fanpageUrl = process.env.NEXT_PUBLIC_NETUP_FACEBOOK_URL ?? "https://www.facebook.com/netup68";
 
 function loginUrl() {
   return `${API_BASE_URL}/api/v1/auth/google/start`;

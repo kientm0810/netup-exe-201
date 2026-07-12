@@ -103,7 +103,7 @@ def main() -> None:
         {
             "NEXT_PUBLIC_API_BASE_URL": api_base_url,
             "NEXT_PUBLIC_NETUP_FACEBOOK_URL": root_values.get(
-                "NEXT_PUBLIC_NETUP_FACEBOOK_URL", "https://www.facebook.com/netup.vn"
+                "NEXT_PUBLIC_NETUP_FACEBOOK_URL", "https://www.facebook.com/netup68"
             ),
         },
     )

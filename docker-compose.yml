@@ -86,7 +86,7 @@ services:
       NPM_CONFIG_REGISTRY: "${NPM_CONFIG_REGISTRY:-https://registry.npmjs.org/}"
       PNPM_VERSION: "${PNPM_VERSION:-11.2.2}"
       NEXT_PUBLIC_API_BASE_URL: "${NEXT_PUBLIC_API_BASE_URL:-}"
-      NEXT_PUBLIC_NETUP_FACEBOOK_URL: "${NEXT_PUBLIC_NETUP_FACEBOOK_URL:-https://www.facebook.com/netup.vn}"
+      NEXT_PUBLIC_NETUP_FACEBOOK_URL: "${NEXT_PUBLIC_NETUP_FACEBOOK_URL:-https://www.facebook.com/netup68}"
     volumes:
       - ./frontend:/app
       - frontend-node-modules:/app/node_modules
