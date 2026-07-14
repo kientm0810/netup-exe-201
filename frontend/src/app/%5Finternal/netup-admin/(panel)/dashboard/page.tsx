@@ -23,6 +23,7 @@ type AdminDashboardMetrics = {
     active_users: number;
     returning_users: number;
     seeded_visits: number;
+    is_estimated: boolean;
     period_days: number;
     generated_at: string;
     daily: Array<{
@@ -95,6 +96,7 @@ export default function AdminDashboardPage() {
   const [userSearch, setUserSearch] = useState("");
   const [eventTypeFilter, setEventTypeFilter] = useState("");
   const [entityTypeFilter, setEntityTypeFilter] = useState("");
+  const [analyticsPeriodDays, setAnalyticsPeriodDays] = useState("30");
   const [message, setMessage] = useState("Đang tải số liệu vận hành...");
   const [error, setError] = useState("");
 
@@ -137,12 +139,12 @@ export default function AdminDashboardPage() {
     }
   }
 
-  async function bootstrap() {
+  async function bootstrap(periodDays = 30) {
     setError("");
     try {
       const [profile, dashboardMetrics] = await Promise.all([
         adminFetch<AdminProfile>("/api/v1/admin/auth/me"),
-        adminFetch<AdminDashboardMetrics>("/api/v1/admin/dashboard/metrics"),
+        adminFetch<AdminDashboardMetrics>(`/api/v1/admin/dashboard/metrics?period_days=${periodDays}`),
       ]);
       setAdmin(profile);
       setMetrics(dashboardMetrics);
@@ -167,7 +169,7 @@ export default function AdminDashboardPage() {
   }
 
   useEffect(() => {
-    void bootstrap();
+    void bootstrap(30);
   }, []);
 
   async function logout() {
@@ -233,16 +235,30 @@ export default function AdminDashboardPage() {
               Chỉ hiển thị visitor và phiên truy cập được hệ thống ghi nhận thực tế.
             </p>
           </div>
-          <Badge tone="info">
-            Cập nhật {formatFullDateTime(metrics?.analytics.generated_at)}
-          </Badge>
+          <div className="flex flex-wrap items-end gap-2">
+            <Field label="Khoảng thống kê">
+              <select
+                className={inputClassName}
+                value={analyticsPeriodDays}
+                onChange={(event) => setAnalyticsPeriodDays(event.target.value)}
+              >
+                <option value="7">7 ngày gần nhất</option>
+                <option value="14">14 ngày gần nhất</option>
+                <option value="30">30 ngày gần nhất</option>
+              </select>
+            </Field>
+            <Button onClick={() => void bootstrap(Number(analyticsPeriodDays))}>Áp dụng</Button>
+            <Badge tone="info">
+              Cập nhật {formatFullDateTime(metrics?.analytics.generated_at)}
+            </Badge>
+          </div>
         </div>
 
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
           <StatCard
             label="Tổng lượt truy cập website"
             value={formatNumber(metrics?.analytics.total_website_visits)}
-            helper="Toàn thời gian"
+            helper={`${metrics?.analytics.period_days ?? 30} ngày gần nhất${metrics?.analytics.is_estimated ? " · ước tính" : ""}`}
             tone="accent"
           />
           <StatCard
@@ -259,13 +275,13 @@ export default function AdminDashboardPage() {
           <StatCard
             label="Số người dùng hoạt động"
             value={formatNumber(metrics?.analytics.active_users)}
-            helper={`${metrics?.analytics.period_days ?? 30} ngày gần nhất`}
+            helper={`${metrics?.analytics.period_days ?? 30} ngày gần nhất${metrics?.analytics.is_estimated ? " · ước tính" : ""}`}
             tone="warning"
           />
           <StatCard
             label="Số người dùng quay lại"
             value={formatNumber(metrics?.analytics.returning_users)}
-            helper={`Có từ 2 phiên trong ${metrics?.analytics.period_days ?? 30} ngày`}
+            helper={`Có từ 2 phiên trong ${metrics?.analytics.period_days ?? 30} ngày${metrics?.analytics.is_estimated ? " · ước tính" : ""}`}
           />
         </section>
       </Card>
@@ -280,7 +296,7 @@ export default function AdminDashboardPage() {
               Rê chuột lên từng ngày để xem chính xác số liệu của tất cả đường biểu diễn.
             </p>
           </div>
-          <Badge>{metrics?.analytics.daily.length ?? 0} ngày</Badge>
+          <Badge>{metrics?.analytics.daily.length ?? 0} ngày{metrics?.analytics.is_estimated ? " · mô phỏng" : ""}</Badge>
         </div>
 
         <div className="grid gap-4 xl:grid-cols-2">

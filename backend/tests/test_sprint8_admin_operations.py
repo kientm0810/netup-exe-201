@@ -38,7 +38,7 @@ def test_get_admin_config_endpoint(  # type: ignore[no-untyped-def]
 
     monkeypatch.setattr(
         "app.api.admin_operations.get_admin_config",
-        lambda: {
+        lambda **_: {
             "platform_fee_rate": 0.1,
             "floor_fee_vnd": 3000,
             "deposit_percent": 30.0,
@@ -107,7 +107,7 @@ def test_get_admin_dashboard_metrics_endpoint(  # type: ignore[no-untyped-def]
 
     monkeypatch.setattr(
         "app.api.admin_operations.get_admin_dashboard_metrics",
-        lambda: {
+        lambda **_: {
             "analytics": {
                 "total_website_visits": 486,
                 "new_users": 72,
@@ -115,6 +115,7 @@ def test_get_admin_dashboard_metrics_endpoint(  # type: ignore[no-untyped-def]
                 "active_users": 154,
                 "returning_users": 98,
                 "seeded_visits": 470,
+                "is_estimated": False,
                 "period_days": 30,
                 "generated_at": datetime(2026, 7, 14, 8, 0, tzinfo=UTC),
                 "daily": [

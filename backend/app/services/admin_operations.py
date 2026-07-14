@@ -373,7 +373,7 @@ def update_admin_config(*, actor_user_id: str, data: dict[str, Any]) -> dict[str
     return updated_config
 
 
-def get_admin_dashboard_metrics() -> dict[str, Any]:
+def get_admin_dashboard_metrics(*, period_days: int = 30) -> dict[str, Any]:
     with get_engine().begin() as connection:
         row = connection.execute(
             text(
@@ -442,7 +442,7 @@ def get_admin_dashboard_metrics() -> dict[str, Any]:
         ).one()
 
     return {
-        "analytics": get_web_analytics_metrics(period_days=30),
+        "analytics": get_web_analytics_metrics(period_days=period_days),
         "bookings": {
             "total": int(row.bookings_total),
             "awaiting_deposit": int(row.bookings_awaiting_deposit),

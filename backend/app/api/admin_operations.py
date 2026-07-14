@@ -91,6 +91,7 @@ class WebAnalyticsMetricsResponse(BaseModel):
     active_users: int
     returning_users: int
     seeded_visits: int
+    is_estimated: bool
     period_days: int
     generated_at: datetime
     daily: list[WebAnalyticsDailyResponse]
@@ -151,8 +152,9 @@ def put_config(
 @router.get("/dashboard/metrics", response_model=AdminDashboardMetricsResponse)
 def get_dashboard_metrics(
     _admin: Annotated[AdminPrincipal, Depends(require_admin)],
+    period_days: Annotated[int, Query(ge=7, le=30)] = 30,
 ) -> dict[str, Any]:
-    return get_admin_dashboard_metrics()
+    return get_admin_dashboard_metrics(period_days=period_days)
 
 
 @router.get("/users", response_model=list[AdminUserResponse])
