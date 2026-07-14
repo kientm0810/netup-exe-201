@@ -157,16 +157,13 @@ safe to call again for page views in the same session.
 ## Append-only User Import
 
 When `USER_IMPORT_ENABLED=true`, container startup runs the bundled import after
-Alembic. The import contains 52 supplied FPT users and 232 deterministic demo
-users, then inserts only the number of non-existing profiles needed to reach
-the 303-account local/demo target. It uses `ON CONFLICT DO NOTHING`, never
-updates/deletes an existing `users` row, and assigns role/Elo only to rows
-inserted by the current transaction.
+Alembic. The importer reads only the tab-separated records in `new_user.txt`;
+it creates no synthetic users and does not cap or fabricate the account count.
+It uses `ON CONFLICT DO NOTHING`, never updates/deletes an existing `users`
+row, and assigns role/Elo only to rows inserted by the current transaction.
 
-The current append-only import uses `HE18` or `HS18` student-code prefixes. The
-later reconciliation migration maps legacy demo `HE19`/`HE20` codes to `HE18`
-while keeping each user UUID unchanged, so connected demo records remain
-attached to the same person.
+The importer accepts valid `HE16`–`HE18` and `HS16`–`HS18` student-code
+prefixes and rejects later cohorts.
 
 Manual verification:
 
@@ -195,22 +192,6 @@ invoice that may also include a court-rental line. Product updates and invoices
 are scoped to the authenticated owner. Player bill endpoints scope every query
 to `customer_user_id`, so a player can only read receipts assigned to that
 account.
-
-## FPT Commerce Demo Seed
-
-Migration `0016_owner_commerce` creates the local/demo owner **CLB Badminton
-FPT**; migrations `0017_reconcile_demo_data` through
-`0019_normalize_shared_avatars` reconcile its receipts and normalize missing or
-repeated legacy avatar URLs. The demo credential is
-`clb.badminton.fpt` / `NetUp@FPT2026` and is deliberately displayed on the
-local login page.
-
-The 287 seeded receipts are explicitly marked `source=excel_seed`. Their daily
-totals reconcile to the `B1` totals from all 17 sheets in
-`NETUP-Doanh thu ngày.xlsx`, for a total of **17,914,000 VND**. The workbook
-does not identify individual product lines, so court/water/shuttlecock lines
-are a labelled, deterministic demo allocation. This seed must not be treated
-as source accounting data.
 
 ## Match and Feedback Endpoints
 

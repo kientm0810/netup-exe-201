@@ -84,6 +84,10 @@ def upgrade() -> None:
         FROM synthetic
         WHERE u.id = synthetic.id;
 
+        -- Optional demo data remains opt-in and is never populated in production.
+        DO $seed$
+        BEGIN
+          IF COALESCE(current_setting('netup.seed_demo_data', true), 'false') = 'true' THEN
         -- The local demo data began at 288 users. After the FPT owner created
         -- in 0016, add only as many player profiles as needed to reach the
         -- authoritative production-sized total of 303; never exceed it.
@@ -514,6 +518,9 @@ def upgrade() -> None:
         WHERE owner.email = 'clb.badminton.fpt@fpt.edu.vn'
           AND invoice.source = 'excel_seed'
           AND item.product_id IS NOT NULL;
+          END IF;
+        END
+        $seed$;
         """
     )
 

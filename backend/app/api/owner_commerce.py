@@ -76,7 +76,7 @@ class OwnerInvoiceResponse(BaseModel):
     subtotal_vnd: int
     discount_vnd: int
     total_vnd: int
-    source: Literal["owner", "excel_seed"]
+    source: Literal["owner"]
     note: str | None = None
     issued_at: datetime
     paid_at: datetime | None = None

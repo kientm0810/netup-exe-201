@@ -38,8 +38,6 @@ function sourceLabel(source: string): string {
     owner_pos: "Bán tại quầy",
     owner: "Bán tại quầy",
     booking: "Đặt sân",
-    seeded: "Dữ liệu khởi tạo",
-    excel_seed: "Dữ liệu Excel",
   };
   return labels[source] ?? source;
 }

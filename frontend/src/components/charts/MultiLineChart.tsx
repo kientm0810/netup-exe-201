@@ -62,6 +62,7 @@ export function MultiLineChart({
 }: MultiLineChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(720);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const rawId = useId();
   const chartId = rawId.replace(/[^a-zA-Z0-9_-]/g, "");
 
@@ -116,6 +117,19 @@ export function MultiLineChart({
   }
 
   const baseline = chart.padding.top + chart.innerHeight;
+  const hoveredPoint = hoveredIndex === null ? null : data[hoveredIndex];
+  const tooltipLeft = hoveredIndex === null
+    ? 0
+    : Math.min(94, Math.max(6, (chart.xFor(hoveredIndex) / width) * 100));
+
+  function selectNearestPoint(clientX: number, svg: SVGSVGElement) {
+    const bounds = svg.getBoundingClientRect();
+    if (bounds.width <= 0) return;
+    const chartX = ((clientX - bounds.left) / bounds.width) * width;
+    const ratio = (chartX - chart.padding.left) / chart.innerWidth;
+    const nextIndex = Math.round(Math.min(1, Math.max(0, ratio)) * (data.length - 1));
+    setHoveredIndex(nextIndex);
+  }
 
   return (
     <div className="space-y-4">
@@ -132,13 +146,35 @@ export function MultiLineChart({
         ))}
       </div>
 
-      <div ref={containerRef} className="w-full overflow-hidden">
+      <div ref={containerRef} className="relative w-full overflow-visible">
+        {hoveredPoint ? (
+          <div
+            className="pointer-events-none absolute z-10 min-w-44 -translate-x-1/2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs shadow-lg"
+            style={{ left: `${tooltipLeft}%`, top: 8 }}
+            role="status"
+          >
+            <p className="mb-1.5 font-semibold text-slate-900">{hoveredPoint.label}</p>
+            <div className="space-y-1">
+              {series.map((itemSeries) => (
+                <p key={itemSeries.key} className="flex items-center justify-between gap-5 text-slate-600">
+                  <span className="flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: itemSeries.color }} />
+                    {itemSeries.label}
+                  </span>
+                  <strong className="text-slate-900">{valueFormatter(hoveredPoint.values[itemSeries.key] ?? 0)}</strong>
+                </p>
+              ))}
+            </div>
+          </div>
+        ) : null}
         <svg
           className="block w-full"
           style={{ height }}
           viewBox={`0 0 ${width} ${height}`}
           role="img"
           aria-label={`Biểu đồ ${series.map((itemSeries) => itemSeries.label).join(", ")}`}
+          onMouseMove={(event) => selectNearestPoint(event.clientX, event.currentTarget)}
+          onMouseLeave={() => setHoveredIndex(null)}
         >
           <defs>
             {series.map((itemSeries) => (
@@ -206,11 +242,12 @@ export function MultiLineChart({
                     key={`${itemSeries.key}-${data[index].label}`}
                     cx={point.x}
                     cy={point.y}
-                    r="3"
+                    r={hoveredIndex === index ? "4.5" : "3"}
                     fill="white"
                     stroke={itemSeries.color}
                     strokeWidth="2"
                     vectorEffect="non-scaling-stroke"
+                    onMouseEnter={() => setHoveredIndex(index)}
                   >
                     <title>
                       {data[index].label}: {itemSeries.label} {valueFormatter(data[index].values[itemSeries.key] ?? 0)}

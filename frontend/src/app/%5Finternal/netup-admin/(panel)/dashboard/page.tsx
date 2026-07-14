@@ -230,7 +230,7 @@ export default function AdminDashboardPage() {
               Sức khỏe tăng trưởng người dùng
             </h2>
             <p className="mt-1 text-sm text-slate-600">
-              Visitor và phiên truy cập được ghi nhận thật; lịch sử ban đầu được khởi tạo tỷ lệ theo dữ liệu tài khoản.
+              Chỉ hiển thị visitor và phiên truy cập được hệ thống ghi nhận thực tế.
             </p>
           </div>
           <Badge tone="info">
@@ -265,7 +265,7 @@ export default function AdminDashboardPage() {
           <StatCard
             label="Số người dùng quay lại"
             value={formatNumber(metrics?.analytics.returning_users)}
-            helper="Có từ 2 phiên truy cập"
+            helper={`Có từ 2 phiên trong ${metrics?.analytics.period_days ?? 30} ngày`}
           />
         </section>
       </Card>
@@ -277,7 +277,7 @@ export default function AdminDashboardPage() {
               Xu hướng {metrics?.analytics.daily.length ?? 0} ngày
             </h2>
             <p className="mt-1 text-sm text-slate-600">
-              Quan sát nhịp tăng giảm traffic, mức độ hoạt động và khả năng giữ chân theo ngày.
+              Rê chuột lên từng ngày để xem chính xác số liệu của tất cả đường biểu diễn.
             </p>
           </div>
           <Badge>{metrics?.analytics.daily.length ?? 0} ngày</Badge>
@@ -288,7 +288,7 @@ export default function AdminDashboardPage() {
             <div className="mb-5">
               <p className="font-semibold text-slate-950">Traffic và giữ chân</p>
               <p className="mt-1 text-xs leading-5 text-slate-500">
-                Lượt truy cập so với người dùng hoạt động và quay lại.
+                Lượt truy cập so với người dùng đăng nhập hoạt động và quay lại trong cùng kỳ.
               </p>
             </div>
             <MultiLineChart

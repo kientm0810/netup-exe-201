@@ -66,8 +66,8 @@ Danh sach bang:
   - `(user_id, provider)`.
 
 ### `user_password_credentials`
-- Muc dich: Thong tin dang nhap local cho tai khoan duoc admin cap truc tiep
-  (va tai khoan demo), tach biet voi Google OAuth.
+- Muc dich: Thong tin dang nhap local cho tai khoan duoc admin cap truc tiep,
+  tach biet voi Google OAuth.
 - Primary key + foreign key: `user_id -> users.id`.
 - Cot chinh: `username` (unique), `password_hash`, `must_change_password`,
   `last_login_at`, `created_at`, `updated_at`.

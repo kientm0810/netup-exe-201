@@ -57,10 +57,6 @@ Local user login:
 
 - `/login`
 
-The local/demo FPT owner account is `clb.badminton.fpt` / `NetUp@FPT2026`.
-It is shown on `/login` only to make the commerce dashboard and invoice flow
-easy to review in the demo environment.
-
 Google auth callback:
 
 - `/auth/google/callback`

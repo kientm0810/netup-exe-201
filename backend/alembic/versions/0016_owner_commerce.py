@@ -132,8 +132,11 @@ def upgrade() -> None:
         CREATE INDEX IF NOT EXISTS idx_inventory_movements_product_created
         ON public.inventory_movements(product_id, created_at DESC);
 
-        -- This is an explicitly labelled demo account requested for the FPT club.
-        -- The PBKDF2 hash is for the documented demo password NetUp@FPT2026.
+        -- Demo data is never seeded by default in a production migration.
+        -- It is available only to an explicitly configured non-production DB.
+        DO $seed$
+        BEGIN
+          IF COALESCE(current_setting('netup.seed_demo_data', true), 'false') = 'true' THEN
         INSERT INTO public.users (
           id, email, full_name, phone, city, district, is_active
         )
@@ -660,6 +663,9 @@ def upgrade() -> None:
           visited_at + make_interval(mins => 4 + session_number * 5)
         FROM anonymous_sessions
         ON CONFLICT (session_key) DO NOTHING;
+          END IF;
+        END
+        $seed$;
         """
     )
 

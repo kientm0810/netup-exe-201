@@ -60,6 +60,7 @@ services:
       - "${BACKEND_HOST_BIND:-127.0.0.1}:${BACKEND_HOST_PORT:-8000}:8000"
     volumes:
       - ./backend:/app
+      - ./new_user.txt:/app/new_user.txt:ro
     entrypoint: >
       sh -c "
       echo 'Running database migrations...' &&

@@ -90,30 +90,12 @@ Username: admin
 Password: admin12345
 ```
 
-## Demo data: CLB Badminton FPT
+## Production user import
 
-Migrations `0016_owner_commerce` through
-`0019_normalize_shared_avatars` provide a clearly labelled local/demo dataset
-for the owner commerce flow. The login page also exposes this account for
-review:
-
-```text
-Username: clb.badminton.fpt
-Password: NetUp@FPT2026
-```
-
-The FPT demo receipts are marked `source=excel_seed`. They reconcile the 17
-daily totals in cell `B1` of `NETUP-Doanh thu ngày.xlsx`: 287 receipts totaling
-**17,914,000 VND**. Receipt lines split the total into court rental, water, and
-shuttlecocks solely for demonstration; they are not asserted to be original
-item-level sales records from the workbook.
-
-The dashboard's registered-account KPI always comes from `COUNT(users)`, not a
-chart fixture. On a clean local demo bootstrap, migrations plus the bulk import
-bring that count to **303** and will not add profiles above that target. Unique
-Google avatars are retained, while missing or legacy shared avatar URLs are
-normalized to initials derived from each person's name. The current append-only
-FPT import uses only `HE18`/`HS18` student-code prefixes.
+`new_user.txt` is the source of truth for bulk user import. The importer reads
+only its tab-separated records and does not create synthetic accounts, demo
+invoices, or seeded traffic. Student codes are validated for the HE/HS 16–18
+cohorts before an account is created.
 
 Google OAuth local callback:
 

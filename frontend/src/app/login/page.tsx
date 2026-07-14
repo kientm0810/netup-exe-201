@@ -7,11 +7,6 @@ import { useRouter } from "next/navigation";
 import { Button, Card, Field, Notice, inputClassName } from "@/components/ui";
 import { API_BASE_URL, apiFetch } from "@/lib/http";
 
-const DEMO_OWNER = {
-  username: "clb.badminton.fpt",
-  password: "NetUp@FPT2026",
-};
-
 type UserProfile = {
   roles: string[];
 };
@@ -132,35 +127,6 @@ export default function LoginPage() {
               </Link>
             </p>
           </form>
-
-          <Card className="space-y-3 border-amber-200 bg-amber-50/70">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.12em] text-amber-800">Tài khoản xem thử</p>
-              <p className="mt-1 text-sm font-semibold text-slate-900">CLB Badminton FPT</p>
-            </div>
-            <dl className="grid gap-1 rounded-lg border border-amber-200/80 bg-white/80 px-3 py-2 text-sm">
-              <div className="flex items-center justify-between gap-4">
-                <dt className="text-slate-500">Tên đăng nhập</dt>
-                <dd className="font-mono font-semibold text-slate-800">{DEMO_OWNER.username}</dd>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <dt className="text-slate-500">Mật khẩu</dt>
-                <dd className="font-mono font-semibold text-slate-800">{DEMO_OWNER.password}</dd>
-              </div>
-            </dl>
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full border-amber-300 bg-white"
-              onClick={() => {
-                setUsername(DEMO_OWNER.username);
-                setPassword(DEMO_OWNER.password);
-                setError("");
-              }}
-            >
-              Điền nhanh tài khoản CLB
-            </Button>
-          </Card>
 
           <Card className="space-y-3 border-slate-200">
             <p className="text-center text-sm font-medium text-slate-600">

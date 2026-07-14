@@ -8,100 +8,6 @@ from sqlalchemy import text
 from app.core.errors import AppError
 from app.db.session import get_engine
 
-# Used after the append-only account import. It only fills analytics rows for
-# accounts that do not have a deterministic seed visitor yet.
-SEED_MISSING_USER_ANALYTICS_SQL = """
-INSERT INTO public.web_visitors (
-  visitor_key,
-  user_id,
-  first_seen_at,
-  last_seen_at,
-  created_at,
-  updated_at
-)
-SELECT
-  'seed-user-' || u.id::text,
-  u.id,
-  LEAST(u.created_at, now()),
-  LEAST(now(), GREATEST(u.updated_at, u.created_at)),
-  LEAST(u.created_at, now()),
-  LEAST(now(), GREATEST(u.updated_at, u.created_at))
-FROM public.users u
-ON CONFLICT (visitor_key) DO NOTHING;
-
-WITH seeded_users AS (
-  SELECT
-    u.id AS user_id,
-    u.created_at AS user_created_at,
-    v.id AS visitor_id,
-    1 + mod(abs(hashtext(u.id::text || '-visit-count')::bigint), 5)::int AS visit_count
-  FROM public.users u
-  JOIN public.web_visitors v ON v.visitor_key = 'seed-user-' || u.id::text
-), generated_visits AS (
-  SELECT
-    seeded_users.*,
-    visit_number,
-    LEAST(
-      now(),
-      GREATEST(
-        user_created_at,
-        now() - make_interval(
-          days => mod(
-            abs(hashtext(user_id::text || '-' || visit_number::text)::bigint),
-            120
-          )::int,
-          hours => mod(visit_number * 7, 20)
-        )
-      )
-    ) AS visited_at
-  FROM seeded_users
-  CROSS JOIN LATERAL generate_series(1, visit_count) AS visit_number
-)
-INSERT INTO public.web_visit_sessions (
-  session_key,
-  visitor_id,
-  user_id,
-  entry_path,
-  last_path,
-  page_view_count,
-  source,
-  started_at,
-  last_seen_at,
-  created_at,
-  updated_at
-)
-SELECT
-  'seed-visit-' || user_id::text || '-' || visit_number::text,
-  visitor_id,
-  user_id,
-  (ARRAY[
-    '/',
-    '/player/discovery',
-    '/player/tournaments',
-    '/player/bookings',
-    '/contact'
-  ])[1 + mod(visit_number - 1, 5)],
-  (ARRAY[
-    '/player/discovery',
-    '/player/tournaments',
-    '/player/bookings',
-    '/player/profile',
-    '/contact'
-  ])[1 + mod(visit_number, 5)],
-  1 + mod(
-    abs(hashtext(user_id::text || '-pages-' || visit_number::text)::bigint),
-    6
-  )::int,
-  'seed',
-  visited_at,
-  visited_at + make_interval(mins => 3 + mod(visit_number * 11, 42)),
-  visited_at,
-  visited_at
-FROM generated_visits
-ON CONFLICT (session_key) DO NOTHING;
-"""
-
-
 def record_website_visit(
     *,
     visitor_key: str,
@@ -214,9 +120,9 @@ def get_web_analytics_metrics(*, period_days: int = 30) -> dict[str, Any]:
                   SELECT sessions.user_id
                   FROM public.web_visit_sessions sessions, limits
                   WHERE sessions.user_id IS NOT NULL
+                    AND sessions.started_at >= limits.period_start
                   GROUP BY sessions.user_id, limits.period_start
                   HAVING count(*) >= 2
-                     AND max(sessions.last_seen_at) >= limits.period_start
                 )
                 SELECT
                   (SELECT count(*)::bigint FROM public.web_visit_sessions)
@@ -291,8 +197,12 @@ def get_web_analytics_metrics(*, period_days: int = 30) -> dict[str, Any]:
                     AND EXISTS (
                       SELECT 1
                       FROM public.web_visit_sessions previous
-                      WHERE previous.visitor_id = sessions.visitor_id
+                      WHERE previous.user_id = sessions.user_id
                         AND previous.started_at < sessions.started_at
+                        AND previous.started_at >= (
+                          (now() AT TIME ZONE 'Asia/Bangkok')::date
+                          - (:series_days - 1)
+                        )::timestamp AT TIME ZONE 'Asia/Bangkok'
                     )
                   GROUP BY 1
                 )
