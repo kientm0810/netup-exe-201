@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui";
+import { avatarInitials } from "@/lib/avatar";
 
 export type UserProfile = {
   email: string;
@@ -37,15 +38,7 @@ export function HeaderUserAuth({ user, logout, isLoggingOut }: HeaderUserAuthPro
     setDropdownAvatarError(false);
   }, [user?.avatar_url]);
 
-  const initials = useMemo(() => {
-    if (!user?.full_name) return "U";
-    return user.full_name
-      .trim()
-      .split(/\s+/)
-      .slice(0, 2)
-      .map((item) => item[0]?.toUpperCase() ?? "")
-      .join("");
-  }, [user?.full_name]);
+  const initials = avatarInitials(user?.full_name, "U");
 
   // Click outside to close dropdown
   useEffect(() => {
@@ -178,6 +171,19 @@ export function HeaderUserAuth({ user, logout, isLoggingOut }: HeaderUserAuthPro
                   <line x1="3" x2="21" y1="10" y2="10" />
                 </svg>
                 <span>Booking của tôi</span>
+              </Link>
+
+              {/* Hóa đơn của tôi Link */}
+              <Link
+                href="/player/bills/"
+                onClick={() => setIsDropdownOpen(false)}
+                className="flex items-center gap-3 rounded-[12px] px-3.5 py-2.5 hover:bg-slate-50 transition duration-150 text-slate-700 hover:text-slate-900 font-semibold text-[13px]"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="h-4.5 w-4.5 text-slate-500 shrink-0">
+                  <path d="M6 2h12a2 2 0 0 1 2 2v18l-4-2-4 2-4-2-4 2V4a2 2 0 0 1 2-2Z" />
+                  <path d="M8 7h8M8 11h8M8 15h5" />
+                </svg>
+                <span>Hóa đơn của tôi</span>
               </Link>
 
               {/* Lịch thi đấu Link */}

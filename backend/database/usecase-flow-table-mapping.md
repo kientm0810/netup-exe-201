@@ -26,6 +26,7 @@ Quy uoc coverage:
 | UC-PL-08 | Nhan booking code/QR va check-in | `bookings`, `checkins` | `payment_transactions` | Covered | Trigger checkin cap nhat booking + tao cash txn |
 | UC-PL-09 | Sau tran: ket qua + feedback | `match_events`, `match_participants`, `match_feedback` | `elo_ratings`, `elo_rating_history` | Partial | Elo algorithm update can lam o service |
 | UC-PL-10 | Xem lich su booking/payment/match/feedback | `bookings`, `payment_transactions`, `match_events`, `match_feedback` | `elo_rating_history` | Covered | Du lieu lich su da co |
+| UC-PL-11 | Xem hoa don duoc gan cho tai khoan | `sales_invoices`, `sales_invoice_items` | `users`, `owner_products` | Covered | API loc bat buoc theo `customer_user_id` |
 | UC-CH-01 | Pool host tao group chat | `chat_rooms` | `pool_posts`, `sessions` | Covered | Trigger buoc host va session phai match pool |
 | UC-CH-02 | Member join chat room pool | `chat_room_members` | `bookings`, `pool_posts`, `chat_rooms` | Covered | Trigger validate host hoac booking active |
 | UC-CH-03 | Gui tin nhan trong room | `chat_messages` | `chat_room_members` | Covered | Trigger check sender la member active |
@@ -34,8 +35,10 @@ Quy uoc coverage:
 | UC-OW-03 | Owner quan ly san/cum san | `court_complexes`, `courts`, `sessions` | `audit_logs` | Covered | Inventory va session model day du |
 | UC-OW-04 | Owner cap nhat gioi han thue | `courts` | `audit_logs` | Covered | `max_rental_duration_minutes` da constraint |
 | UC-OW-05 | Owner check-in booking | `checkins`, `bookings` | `payment_transactions`, `courts` | Covered | Trigger enforce owner dung san + cash due |
+| UC-OW-06 | Owner ban nuoc/cau va tao hoa don | `owner_products`, `sales_invoices`, `sales_invoice_items` | `inventory_movements`, `audit_logs` | Covered | Service lock ton kho, tru hang va ghi movement trong transaction |
 | UC-AD-01 | Admin cap nhat config he thong | `admin_configs` | `audit_logs` | Covered | Da co table singleton config |
 | UC-AD-02 | Admin dashboard van hanh + tang truong user | `web_visitors`, `web_visit_sessions`, `users` | `bookings`, `sessions`, `payment_transactions`, `owner_service_requests` | Covered | Traffic that duoc track theo visitor/session; 5 KPI va daily series duoc aggregate tai API |
+| UC-AD-03 | Super admin cap tai khoan chu san local | `users`, `user_password_credentials`, `user_role_assignments` | `owner_service_requests`, `owner_post_quotas`, `audit_logs` | Covered | Tao account, role owner, quota va audit trong mot transaction |
 
 ## 3) Flow chi tiet theo nhom
 
@@ -43,9 +46,12 @@ Quy uoc coverage:
 1. Google callback:
 - Write: `users` (insert/update), `oauth_identities` (upsert)
 - Optional write: `audit_logs`
-2. Owner onboarding:
+2. Admin cap local owner account:
+- Write: `users`, `user_password_credentials`, `user_role_assignments`,
+  `owner_service_requests`, `owner_post_quotas`, `audit_logs`
+3. Owner onboarding:
 - Write: `owner_service_requests`
-3. Admin approve owner:
+4. Admin approve owner:
 - Update: `owner_service_requests.status`
 - Insert: `user_role_assignments` (role=`owner`, revoked_at NULL)
 - Insert: `audit_logs`
@@ -75,7 +81,19 @@ Quy uoc coverage:
 3. Check-in + settle:
 - Giong flow pool o phan checkin
 
-### 3.4 Elo + match feedback flow
+### 3.4 Owner commerce va player bill flow
+1. Owner cap nhat danh muc/nhap hang:
+- Write: `owner_products`, `inventory_movements`, `audit_logs`
+2. Owner tao hoa don:
+- Read va lock: `owner_products`
+- Write: `sales_invoices`, `sales_invoice_items`
+- Update: `owner_products.stock_quantity`
+- Write: `inventory_movements`, `audit_logs`
+3. Player xem hoa don:
+- Read: `sales_invoices`, `sales_invoice_items`
+- API filter `customer_user_id = current_user.id`
+
+### 3.5 Elo + match feedback flow
 1. Onboarding assessment:
 - Write: `player_assessments` tu form onboarding ban dau
 - Upsert: `elo_ratings`
@@ -91,7 +109,7 @@ Quy uoc coverage:
   - Update: `elo_ratings`
   - Insert: `elo_rating_history`
 
-### 3.5 Pool group chat flow
+### 3.6 Pool group chat flow
 1. Tao room:
 - Write: `chat_rooms` (trigger check host/session)
 2. Join room:
@@ -115,6 +133,8 @@ Quy uoc coverage:
 | Chi member hop le moi vao chat | `chat_room_members` trigger `validate_chat_member_row` |
 | Feedback khong self + dung teammate/opponent | `match_feedback` constraints + trigger `validate_match_feedback_row` |
 | Luu lich su bien dong Elo | `elo_rating_history` |
+| Hoa don player chi xem duoc cua minh | API scope `sales_invoices.customer_user_id` |
+| Ban hang khong duoc am ton kho | `owner_products` + transaction lock trong service |
 | Form onboarding chi tao Elo ban dau mot lan | `player_assessments` unique + service check |
 | Video AI co the danh gia lai sau onboarding | `video_assessments` partial unique chi chan uploaded/analyzing |
 

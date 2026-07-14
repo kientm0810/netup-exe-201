@@ -23,7 +23,7 @@ export default function AdminPanelLayout({ children }: { children: React.ReactNo
         const profile = await adminFetch<AdminProfile>("/api/v1/admin/auth/me");
         setAdmin(profile);
       } catch {
-        router.push("/login");
+        router.push("/_internal/netup-admin/login/");
       } finally {
         setIsChecking(false);
       }
@@ -51,6 +51,7 @@ export default function AdminPanelLayout({ children }: { children: React.ReactNo
           { href: "/_internal/netup-admin/config", label: "Cấu hình" },
           { href: "/_internal/netup-admin/tournaments", label: "Giải đấu" },
           { href: "/_internal/netup-admin/owner-requests", label: "Duyệt owner" },
+          { href: "/_internal/netup-admin/owners", label: "Tài khoản chủ sân" },
         ]}
       />
       {children}

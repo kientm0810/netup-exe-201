@@ -17,9 +17,9 @@ HE186918	Đặng	Quang	Khải
 HE187167	Lê	Văn	Triệu
 HE187201	Lê	Xuân	Hiếu
 HE187333	Phạm	Đức	Thuận
-HE190009	Đỗ	Xuân	Tài
-HE194070	Bùi	Quang	Huy
-HE201969	Nguyễn	Đức	Duy
+HE180009	Đỗ	Xuân	Tài
+HE184070	Bùi	Quang	Huy
+HE181969	Nguyễn	Đức	Duy
 HS180005	Phạm	Yến	Nhi
 HS180176	Đào	Thanh	Thuỳ
 HS180285	Phạm	Thị	Duyên

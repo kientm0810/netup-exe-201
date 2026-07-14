@@ -15,6 +15,7 @@ from app.core.security import (
     create_signed_token,
     decode_signed_token,
     hash_token,
+    verify_password,
 )
 from app.db.session import get_engine
 
@@ -246,6 +247,92 @@ def authenticate_google_code(
 ) -> dict[str, Any]:
     profile = _exchange_google_code(code)
     user = _upsert_google_user(profile)
+    return _token_response_for_user(user, ip=ip, user_agent=user_agent)
+
+
+def authenticate_local_user(
+    *, username: str, password: str, ip: str | None, user_agent: str | None
+) -> dict[str, Any] | None:
+    """Authenticate a regular user/owner without crossing into admin auth."""
+    clean_username = username.strip()
+    with get_engine().begin() as connection:
+        failed_attempts = connection.execute(
+            text(
+                """
+                SELECT count(*)::int
+                FROM public.user_login_audits
+                WHERE success = false
+                  AND username_attempt = :username
+                  AND created_at >= now() - interval '15 minutes'
+                """
+            ),
+            {"username": clean_username},
+        ).scalar_one()
+        if int(failed_attempts) >= 10:
+            raise AppError(
+                status_code=429,
+                code="user_login_rate_limited",
+                message="Đăng nhập sai quá nhiều lần. Vui lòng thử lại sau 15 phút.",
+            )
+
+        row = connection.execute(
+            text(
+                """
+                SELECT
+                  u.id,
+                  u.email,
+                  u.full_name,
+                  u.avatar_url,
+                  credential.password_hash
+                FROM public.user_password_credentials credential
+                JOIN public.users u ON u.id = credential.user_id
+                WHERE credential.username = :username
+                  AND u.is_active = true
+                LIMIT 1
+                """
+            ),
+            {"username": clean_username},
+        ).first()
+        success = row is not None and verify_password(password, row.password_hash)
+        connection.execute(
+            text(
+                """
+                INSERT INTO public.user_login_audits (
+                  user_id, username_attempt, success, ip, user_agent
+                )
+                VALUES (:user_id, :username, :success, :ip, :user_agent)
+                """
+            ),
+            {
+                "user_id": row.id if row else None,
+                "username": clean_username,
+                "success": success,
+                "ip": ip,
+                "user_agent": user_agent,
+            },
+        )
+        if not success:
+            return None
+
+        connection.execute(
+            text(
+                """
+                UPDATE public.user_password_credentials
+                SET last_login_at = now()
+                WHERE user_id = :user_id
+                """
+            ),
+            {"user_id": row.id},
+        )
+        roles = _roles_for_user(connection, str(row.id))
+
+    user = UserPrincipal(
+        id=str(row.id),
+        email=str(row.email),
+        full_name=str(row.full_name),
+        avatar_url=str(row.avatar_url) if row.avatar_url else None,
+        roles=roles,
+    )
     return _token_response_for_user(user, ip=ip, user_agent=user_agent)
 
 

@@ -2,10 +2,15 @@
 
 ## Scope
 Schema nay duoc thiet ke theo `business.md` cho tong the nghiep vu:
-1. Auth + RBAC (Google login, owner duyet boi admin).
+1. Auth + RBAC (Google login, local owner account duoc admin cap, owner duyet boi admin).
 2. Court/session/booking/payment/check-in.
-3. Pool group chat.
-4. Match result + peer feedback + Elo history.
+3. Ban hang tai quay (nuoc, cau), ton kho va hoa don gan voi player.
+4. Pool group chat.
+5. Match result + peer feedback + Elo history.
+
+`schema.sql` la schema base. Migration `0016_owner_commerce` bo sung cac bang
+local credential, hang hoa, hoa don va inventory movement; can chay Alembic den
+`head` de co day du scope ben duoi.
 
 ## Design Principles
 1. Constraint-first: rang buoc nghiep vu quan trong dat o DB (overlap, uniqueness, lifecycle coherence).
@@ -25,3 +30,6 @@ Schema nay duoc thiet ke theo `business.md` cho tong the nghiep vu:
 2. Dung advisory lock hoac serialized transaction cho booking de tranh race condition slot.
 3. Webhook VNPay phai idempotent theo `provider_transaction_id` + `external_ref`.
 4. Elo engine cap nhat qua service layer, ghi vao `elo_rating_history`.
+5. Tao hoa don tai quay phai lock row san pham, tru ton kho va ghi
+   `inventory_movements` trong cung transaction. Player bill API phai loc theo
+   `customer_user_id`, khong chi theo ID hoa don.

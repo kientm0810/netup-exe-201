@@ -10,6 +10,7 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
           { href: "/owner/courts", label: "Quản lý sân" },
           { href: "/owner/schedule", label: "Quản lý lịch" },
           { href: "/owner/check-in", label: "Check-in" },
+          { href: "/owner/sales", label: "Bán hàng & hóa đơn" },
         ]}
       />
       {children}

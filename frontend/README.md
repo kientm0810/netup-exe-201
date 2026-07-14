@@ -34,12 +34,14 @@ Hidden admin routes:
 - `/_internal/netup-admin/dashboard`
 - `/_internal/netup-admin/config`
 - `/_internal/netup-admin/owner-requests`
+- `/_internal/netup-admin/owners`
 
 Owner routes:
 
 - `/owner/dashboard`
 - `/owner/courts`
 - `/owner/check-in`
+- `/owner/sales`
 
 Player routes:
 
@@ -49,6 +51,15 @@ Player routes:
 - `/player/chat?poolPostId=<pool-post-id>`
 - `/player/booking?sessionId=<session-id>`
 - `/player/bookings`
+- `/player/bills`
+
+Local user login:
+
+- `/login`
+
+The local/demo FPT owner account is `clb.badminton.fpt` / `NetUp@FPT2026`.
+It is shown on `/login` only to make the commerce dashboard and invoice flow
+easy to review in the demo environment.
 
 Google auth callback:
 
@@ -93,3 +104,5 @@ connected to the FastAPI backend. Sprint 3 adds player discovery and booking
 flows connected to live APIs. Sprint 8 adds admin config management, operations
 dashboard metrics, and audit trail viewer. UI shell is now aligned to the
 DEMO layouts pattern (root shell + role navigation for player/owner/admin).
+The current demo also includes super-admin owner provisioning, owner retail
+sales/invoices, a combined owner revenue dashboard, and player receipt history.

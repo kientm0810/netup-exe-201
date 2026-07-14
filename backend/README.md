@@ -80,9 +80,12 @@ python -m pytest
 - `PUT /api/v1/admin/config`
 - `GET /api/v1/admin/dashboard/metrics`
 - `GET /api/v1/admin/audit-logs`
+- `GET /api/v1/admin/owners`
+- `POST /api/v1/admin/owners` (super-admin only; provisions an owner role and
+  local username/password account)
 
 Dashboard metrics include website visits, new visitors, registered accounts,
-active registered users, returning visitors, and a 14-day daily series. The
+active registered users, returning visitors, and a 30-day daily series. The
 analytics period for new/active/returning users is 30 days.
 
 The dev container seeds a local admin account when `ADMIN_SEED_ENABLED=true`.
@@ -94,8 +97,13 @@ Admin login brute-force protection applies per username/IP window and returns
 - `GET /api/v1/auth/google/start`
 - `GET /api/v1/auth/google/callback`
 - `GET /api/v1/auth/me`
+- `POST /api/v1/auth/local/login`
 - `POST /api/v1/auth/refresh`
 - `POST /api/v1/auth/logout`
+
+Local login is available only for accounts provisioned through the owner
+account flow (or an explicit demo seed); Google OAuth remains the normal player
+entry flow.
 
 ## Owner Onboarding Endpoints
 
@@ -149,9 +157,16 @@ safe to call again for page views in the same session.
 ## Append-only User Import
 
 When `USER_IMPORT_ENABLED=true`, container startup runs the bundled import after
-Alembic. The import contains 52 supplied FPT users and 100 demo users. It uses
-`ON CONFLICT DO NOTHING`, never updates/deletes an existing `users` row, and
-assigns role/Elo only to rows inserted by the current transaction.
+Alembic. The import contains 52 supplied FPT users and 232 deterministic demo
+users, then inserts only the number of non-existing profiles needed to reach
+the 303-account local/demo target. It uses `ON CONFLICT DO NOTHING`, never
+updates/deletes an existing `users` row, and assigns role/Elo only to rows
+inserted by the current transaction.
+
+The current append-only import uses `HE18` or `HS18` student-code prefixes. The
+later reconciliation migration maps legacy demo `HE19`/`HE20` codes to `HE18`
+while keeping each user UUID unchanged, so connected demo records remain
+attached to the same person.
 
 Manual verification:
 
@@ -164,6 +179,38 @@ docker compose exec backend-api python -m app.scripts.import_users
 
 - `GET /api/v1/owner/checkins`
 - `POST /api/v1/owner/checkins`
+
+## Owner Commerce and Player Bills Endpoints
+
+- `GET/POST /api/v1/owner/products`
+- `POST /api/v1/owner/products/{product_id}/restock`
+- `GET/POST /api/v1/owner/invoices`
+- `GET /api/v1/owner/invoices/{invoice_id}`
+- `GET /api/v1/owner/commerce/dashboard`
+- `GET /api/v1/bills`
+- `GET /api/v1/bills/{invoice_id}`
+
+Owners can sell water and shuttlecocks, replenish stock, and create a paid
+invoice that may also include a court-rental line. Product updates and invoices
+are scoped to the authenticated owner. Player bill endpoints scope every query
+to `customer_user_id`, so a player can only read receipts assigned to that
+account.
+
+## FPT Commerce Demo Seed
+
+Migration `0016_owner_commerce` creates the local/demo owner **CLB Badminton
+FPT**; migrations `0017_reconcile_demo_data` through
+`0019_normalize_shared_avatars` reconcile its receipts and normalize missing or
+repeated legacy avatar URLs. The demo credential is
+`clb.badminton.fpt` / `NetUp@FPT2026` and is deliberately displayed on the
+local login page.
+
+The 287 seeded receipts are explicitly marked `source=excel_seed`. Their daily
+totals reconcile to the `B1` totals from all 17 sheets in
+`NETUP-Doanh thu ngày.xlsx`, for a total of **17,914,000 VND**. The workbook
+does not identify individual product lines, so court/water/shuttlecock lines
+are a labelled, deterministic demo allocation. This seed must not be treated
+as source accounting data.
 
 ## Match and Feedback Endpoints
 

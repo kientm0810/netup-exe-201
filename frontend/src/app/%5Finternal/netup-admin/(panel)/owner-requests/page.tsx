@@ -76,7 +76,7 @@ export default function AdminOwnerRequestsPage() {
     } catch (caught) {
       const nextError = caught instanceof Error ? caught.message : "Không tải được hồ sơ owner";
       if (nextError === "admin_unauthorized") {
-        router.push("/login");
+        router.push("/_internal/netup-admin/login/");
         return;
       }
       setError(nextError);
@@ -102,7 +102,7 @@ export default function AdminOwnerRequestsPage() {
     } catch (caught) {
       const nextError = caught instanceof Error ? caught.message : "Không cập nhật được hồ sơ owner";
       if (nextError === "admin_unauthorized") {
-        router.push("/login");
+        router.push("/_internal/netup-admin/login/");
         return;
       }
       setError(nextError);
@@ -129,7 +129,7 @@ export default function AdminOwnerRequestsPage() {
     } catch (caught) {
       const nextError = caught instanceof Error ? caught.message : "Không cập nhật được quota owner";
       if (nextError === "admin_unauthorized") {
-        router.push("/login");
+        router.push("/_internal/netup-admin/login/");
         return;
       }
       setError(nextError);
@@ -140,7 +140,7 @@ export default function AdminOwnerRequestsPage() {
 
   async function logout() {
     await adminLogout();
-    router.push("/login");
+    router.push("/_internal/netup-admin/login/");
   }
 
   const stats = useMemo(

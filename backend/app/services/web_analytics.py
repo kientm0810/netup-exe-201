@@ -199,7 +199,7 @@ def record_website_visit(
 
 def get_web_analytics_metrics(*, period_days: int = 30) -> dict[str, Any]:
     period_days = max(1, min(period_days, 365))
-    series_days = min(period_days, 14)
+    series_days = min(period_days, 30)
 
     with get_engine().begin() as connection:
         summary = connection.execute(
@@ -211,9 +211,10 @@ def get_web_analytics_metrics(*, period_days: int = 30) -> dict[str, Any]:
                     - (:period_days - 1)
                   )::timestamp AT TIME ZONE 'Asia/Bangkok' AS period_start
                 ), returning_visitors AS (
-                  SELECT sessions.visitor_id
+                  SELECT sessions.user_id
                   FROM public.web_visit_sessions sessions, limits
-                  GROUP BY sessions.visitor_id, limits.period_start
+                  WHERE sessions.user_id IS NOT NULL
+                  GROUP BY sessions.user_id, limits.period_start
                   HAVING count(*) >= 2
                      AND max(sessions.last_seen_at) >= limits.period_start
                 )
@@ -277,25 +278,16 @@ def get_web_analytics_metrics(*, period_days: int = 30) -> dict[str, Any]:
                     - (:series_days - 1)
                   )::timestamp AT TIME ZONE 'Asia/Bangkok'
                   GROUP BY 1
-                ), registration_days AS (
-                  SELECT
-                    (created_at AT TIME ZONE 'Asia/Bangkok')::date AS metric_date,
-                    count(*)::int AS registered_accounts
-                  FROM public.users
-                  WHERE created_at >= (
-                    (now() AT TIME ZONE 'Asia/Bangkok')::date
-                    - (:series_days - 1)
-                  )::timestamp AT TIME ZONE 'Asia/Bangkok'
-                  GROUP BY 1
                 ), returning_days AS (
                   SELECT
                     (sessions.started_at AT TIME ZONE 'Asia/Bangkok')::date AS metric_date,
-                    count(DISTINCT sessions.visitor_id)::int AS returning_users
+                    count(DISTINCT sessions.user_id)::int AS returning_users
                   FROM public.web_visit_sessions sessions
                   WHERE sessions.started_at >= (
                     (now() AT TIME ZONE 'Asia/Bangkok')::date
                     - (:series_days - 1)
                   )::timestamp AT TIME ZONE 'Asia/Bangkok'
+                    AND sessions.user_id IS NOT NULL
                     AND EXISTS (
                       SELECT 1
                       FROM public.web_visit_sessions previous
@@ -308,14 +300,18 @@ def get_web_analytics_metrics(*, period_days: int = 30) -> dict[str, Any]:
                   days.metric_date,
                   COALESCE(session_days.total_visits, 0)::int AS total_visits,
                   COALESCE(new_visitor_days.new_users, 0)::int AS new_users,
-                  COALESCE(registration_days.registered_accounts, 0)::int
-                    AS registered_accounts,
+                  (
+                    SELECT count(*)::int
+                    FROM public.users user_account
+                    WHERE user_account.created_at < (
+                      (days.metric_date + 1)::timestamp AT TIME ZONE 'Asia/Bangkok'
+                    )
+                  ) AS registered_accounts,
                   COALESCE(session_days.active_users, 0)::int AS active_users,
                   COALESCE(returning_days.returning_users, 0)::int AS returning_users
                 FROM days
                 LEFT JOIN session_days USING (metric_date)
                 LEFT JOIN new_visitor_days USING (metric_date)
-                LEFT JOIN registration_days USING (metric_date)
                 LEFT JOIN returning_days USING (metric_date)
                 ORDER BY days.metric_date
                 """

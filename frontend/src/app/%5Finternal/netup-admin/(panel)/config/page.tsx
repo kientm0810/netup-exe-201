@@ -63,7 +63,7 @@ export default function AdminConfigPage() {
     } catch (caught) {
       const nextError = caught instanceof Error ? caught.message : "Không tải được cấu hình hệ thống";
       if (nextError === "admin_unauthorized") {
-        router.push("/login");
+        router.push("/_internal/netup-admin/login/");
         return;
       }
       setError(nextError);
@@ -104,7 +104,7 @@ export default function AdminConfigPage() {
     } catch (caught) {
       const nextError = caught instanceof Error ? caught.message : "Không cập nhật được cấu hình";
       if (nextError === "admin_unauthorized") {
-        router.push("/login");
+        router.push("/_internal/netup-admin/login/");
         return;
       }
       setError(nextError);
@@ -115,7 +115,7 @@ export default function AdminConfigPage() {
 
   async function logout() {
     await adminLogout();
-    router.push("/login");
+    router.push("/_internal/netup-admin/login/");
   }
 
   return (

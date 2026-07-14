@@ -1,12 +1,20 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { Button, Card, Field, Notice, inputClassName } from "@/components/ui";
-import { API_BASE_URL } from "@/lib/http";
+import { API_BASE_URL, apiFetch } from "@/lib/http";
 
-const apiBaseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "").replace(/\/$/, "");
+const DEMO_OWNER = {
+  username: "clb.badminton.fpt",
+  password: "NetUp@FPT2026",
+};
+
+type UserProfile = {
+  roles: string[];
+};
 
 function googleLoginUrl() {
   return `${API_BASE_URL}/api/v1/auth/google/start`;
@@ -42,29 +50,24 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  async function submitAdmin(event: FormEvent<HTMLFormElement>) {
+  async function submitLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${apiBaseUrl}/api/v1/admin/auth/login`, {
+      await apiFetch("/api/v1/auth/local/login", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
       });
-      const payload = await response.json();
-
-      if (!response.ok) {
-        setError(payload?.error?.message ?? "Đăng nhập không thành công");
-        return;
-      }
-
-      window.localStorage.setItem("netup_admin_access_token", payload.access_token);
-      window.localStorage.setItem("netup_admin_refresh_token", payload.refresh_token);
-      router.push("/_internal/netup-admin/dashboard");
-    } catch {
-      setError("Không kết nối được API đăng nhập");
+      const profile = await apiFetch<UserProfile>("/api/v1/auth/me", {
+        credentials: "include",
+      });
+      router.replace(profile.roles.includes("owner") ? "/owner/dashboard/" : "/");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Đăng nhập không thành công");
     } finally {
       setIsSubmitting(false);
     }
@@ -87,17 +90,21 @@ export default function LoginPage() {
         </div>
 
         <div className="space-y-5 p-5 sm:p-7">
-          <form onSubmit={submitAdmin} className="space-y-4 rounded-lg border border-slate-200 p-5">
+          <form onSubmit={submitLogin} className="space-y-4 rounded-lg border border-slate-200 p-5">
             <div>
               <h2 className="font-heading text-xl font-semibold text-ink">Đăng nhập</h2>
+              <p className="mt-1 text-sm leading-6 text-slate-500">
+                Dành cho người chơi và tài khoản chủ sân.
+              </p>
             </div>
 
-            <Field label="Username">
+            <Field label="Tên đăng nhập">
               <input
                 className={inputClassName}
                 value={username}
                 onChange={(event) => setUsername(event.target.value)}
                 autoComplete="username"
+                required
               />
             </Field>
 
@@ -108,6 +115,7 @@ export default function LoginPage() {
                 onChange={(event) => setPassword(event.target.value)}
                 type="password"
                 autoComplete="current-password"
+                required
               />
             </Field>
 
@@ -116,7 +124,43 @@ export default function LoginPage() {
             <Button className="w-full" disabled={isSubmitting}>
               {isSubmitting ? "Đang đăng nhập..." : "Đăng nhập"}
             </Button>
+
+            <p className="text-center text-xs text-slate-500">
+              Bạn là quản trị viên?{" "}
+              <Link href="/_internal/netup-admin/login/" className="font-semibold text-red-800 hover:underline">
+                Đăng nhập trang admin
+              </Link>
+            </p>
           </form>
+
+          <Card className="space-y-3 border-amber-200 bg-amber-50/70">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.12em] text-amber-800">Tài khoản xem thử</p>
+              <p className="mt-1 text-sm font-semibold text-slate-900">CLB Badminton FPT</p>
+            </div>
+            <dl className="grid gap-1 rounded-lg border border-amber-200/80 bg-white/80 px-3 py-2 text-sm">
+              <div className="flex items-center justify-between gap-4">
+                <dt className="text-slate-500">Tên đăng nhập</dt>
+                <dd className="font-mono font-semibold text-slate-800">{DEMO_OWNER.username}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <dt className="text-slate-500">Mật khẩu</dt>
+                <dd className="font-mono font-semibold text-slate-800">{DEMO_OWNER.password}</dd>
+              </div>
+            </dl>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full border-amber-300 bg-white"
+              onClick={() => {
+                setUsername(DEMO_OWNER.username);
+                setPassword(DEMO_OWNER.password);
+                setError("");
+              }}
+            >
+              Điền nhanh tài khoản CLB
+            </Button>
+          </Card>
 
           <Card className="space-y-3 border-slate-200">
             <p className="text-center text-sm font-medium text-slate-600">

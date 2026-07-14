@@ -34,6 +34,35 @@ def test_user_me_rejects_missing_token(client: TestClient) -> None:
     assert response.json()["error"]["code"] == "user_unauthorized"
 
 
+def test_local_login_sets_user_cookies(client: TestClient, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    user = UserPrincipal(
+        id="owner-id",
+        email="club@example.com",
+        full_name="CLB thử nghiệm",
+        avatar_url=None,
+        roles=["owner"],
+    )
+    monkeypatch.setattr(
+        "app.api.auth_user.authenticate_local_user",
+        lambda **_: {
+            "access_token": "owner-access-token",
+            "refresh_token": "owner-refresh-token",
+            "token_type": "bearer",
+            "expires_in": 1800,
+            "user": user,
+        },
+    )
+
+    response = client.post(
+        "/api/v1/auth/local/login",
+        json={"username": "club", "password": "strong-password"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["user"]["roles"] == ["owner"]
+    assert "netup_user_access_token=owner-access-token" in response.headers["set-cookie"]
+
+
 def test_google_start_redirects_when_configured(
     client: TestClient, monkeypatch
 ) -> None:  # type: ignore[no-untyped-def]

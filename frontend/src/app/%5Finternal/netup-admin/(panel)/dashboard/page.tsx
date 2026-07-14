@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { MultiLineChart } from "@/components/charts/MultiLineChart";
 import { Badge, Button, ButtonLink, Card, Field, Notice, PageHero, StatCard, inputClassName } from "@/components/ui";
+import { avatarInitials } from "@/lib/avatar";
 import { formatFullDateTime, formatNumber, formatVnd } from "@/lib/format";
 
 import { adminFetch, adminLogout } from "../../_lib/auth";
@@ -108,7 +110,7 @@ export default function AdminDashboardPage() {
     } catch (caught) {
       const nextError = caught instanceof Error ? caught.message : "Không tải được audit logs";
       if (nextError === "admin_unauthorized") {
-        router.push("/login");
+        router.push("/_internal/netup-admin/login/");
         return;
       }
       setError(nextError);
@@ -127,7 +129,7 @@ export default function AdminDashboardPage() {
     } catch (caught) {
       const nextError = caught instanceof Error ? caught.message : "Không tải được danh sách user";
       if (nextError === "admin_unauthorized") {
-        router.push("/login");
+        router.push("/_internal/netup-admin/login/");
         return;
       }
       setError(nextError);
@@ -152,7 +154,7 @@ export default function AdminDashboardPage() {
     } catch (caught) {
       const nextError = caught instanceof Error ? caught.message : "Không tải được dashboard";
       if (nextError === "admin_unauthorized") {
-        router.push("/login");
+        router.push("/_internal/netup-admin/login/");
         return;
       }
       setError(nextError);
@@ -170,8 +172,26 @@ export default function AdminDashboardPage() {
 
   async function logout() {
     await adminLogout();
-    router.push("/login");
+    router.push("/_internal/netup-admin/login/");
   }
+
+  const analyticsChartData = useMemo(
+    () =>
+      (metrics?.analytics.daily ?? []).map((item) => ({
+        label: new Date(`${item.date}T00:00:00`).toLocaleDateString("vi-VN", {
+          day: "2-digit",
+          month: "2-digit",
+        }),
+        values: {
+          total_visits: item.total_visits,
+          new_users: item.new_users,
+          registered_accounts: item.registered_accounts,
+          active_users: item.active_users,
+          returning_users: item.returning_users,
+        },
+      })),
+    [metrics?.analytics.daily],
+  );
 
   return (
     <div className="space-y-5">
@@ -187,6 +207,9 @@ export default function AdminDashboardPage() {
             </ButtonLink>
             <ButtonLink href="/_internal/netup-admin/owner-requests" variant="outline">
               Duyệt owner
+            </ButtonLink>
+            <ButtonLink href="/_internal/netup-admin/owners" variant="outline">
+              Tài khoản chủ sân
             </ButtonLink>
             <Button variant="outline" onClick={logout}>
               Đăng xuất
@@ -250,48 +273,53 @@ export default function AdminDashboardPage() {
       <Card className="space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="font-heading text-xl font-semibold text-ink">Xu hướng 14 ngày</h2>
+            <h2 className="font-heading text-xl font-semibold text-ink">
+              Xu hướng {metrics?.analytics.daily.length ?? 0} ngày
+            </h2>
             <p className="mt-1 text-sm text-slate-600">
-              Đối chiếu traffic, tài khoản mới, active user và tỷ lệ quay lại theo ngày.
+              Quan sát nhịp tăng giảm traffic, mức độ hoạt động và khả năng giữ chân theo ngày.
             </p>
           </div>
           <Badge>{metrics?.analytics.daily.length ?? 0} ngày</Badge>
         </div>
 
-        <div className="overflow-x-auto rounded-lg border border-slate-200">
-          <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
-              <tr>
-                <th className="px-4 py-3">Ngày</th>
-                <th className="px-4 py-3">Lượt truy cập</th>
-                <th className="px-4 py-3">User mới</th>
-                <th className="px-4 py-3">Đăng ký mới</th>
-                <th className="px-4 py-3">Hoạt động</th>
-                <th className="px-4 py-3">Quay lại</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 bg-white">
-              {(metrics?.analytics.daily ?? []).map((item) => (
-                <tr key={item.date}>
-                  <td className="whitespace-nowrap px-4 py-3 font-semibold text-slate-900">
-                    {new Date(`${item.date}T00:00:00`).toLocaleDateString("vi-VN")}
-                  </td>
-                  <td className="px-4 py-3 text-slate-700">{formatNumber(item.total_visits)}</td>
-                  <td className="px-4 py-3 text-slate-700">{formatNumber(item.new_users)}</td>
-                  <td className="px-4 py-3 text-slate-700">{formatNumber(item.registered_accounts)}</td>
-                  <td className="px-4 py-3 text-slate-700">{formatNumber(item.active_users)}</td>
-                  <td className="px-4 py-3 text-slate-700">{formatNumber(item.returning_users)}</td>
-                </tr>
-              ))}
-              {!metrics?.analytics.daily.length ? (
-                <tr>
-                  <td className="px-4 py-6 text-center text-slate-500" colSpan={6}>
-                    Chưa có dữ liệu analytics theo ngày.
-                  </td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
+        <div className="grid gap-4 xl:grid-cols-2">
+          <div className="rounded-lg border border-slate-200 bg-slate-50/40 p-4">
+            <div className="mb-5">
+              <p className="font-semibold text-slate-950">Traffic và giữ chân</p>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                Lượt truy cập so với người dùng hoạt động và quay lại.
+              </p>
+            </div>
+            <MultiLineChart
+              data={analyticsChartData}
+              series={[
+                { key: "total_visits", label: "Lượt truy cập", color: "#b91c1c" },
+                { key: "active_users", label: "Đang hoạt động", color: "#d97706" },
+                { key: "returning_users", label: "Quay lại", color: "#0284c7" },
+              ]}
+              valueFormatter={formatNumber}
+              emptyMessage="Chưa có dữ liệu traffic theo ngày."
+            />
+          </div>
+
+          <div className="rounded-lg border border-slate-200 bg-slate-50/40 p-4">
+            <div className="mb-5">
+              <p className="font-semibold text-slate-950">Tăng trưởng tài khoản</p>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                Người dùng mới theo ngày và tổng tài khoản thực tế tại cuối ngày.
+              </p>
+            </div>
+            <MultiLineChart
+              data={analyticsChartData}
+              series={[
+                { key: "new_users", label: "Người dùng mới", color: "#059669" },
+                { key: "registered_accounts", label: "Tổng tài khoản", color: "#7c3aed" },
+              ]}
+              valueFormatter={formatNumber}
+              emptyMessage="Chưa có dữ liệu tăng trưởng tài khoản."
+            />
+          </div>
         </div>
       </Card>
 
@@ -453,7 +481,7 @@ export default function AdminDashboardPage() {
                         />
                       ) : (
                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600">
-                          {item.full_name.slice(0, 2).toUpperCase()}
+                          {avatarInitials(item.full_name)}
                         </div>
                       )}
                       <div>

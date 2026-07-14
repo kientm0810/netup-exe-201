@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { avatarInitials } from "@/lib/avatar";
 import { formatVnd } from "@/lib/format";
 
 type Match = {
@@ -126,8 +127,6 @@ export default function TournamentDetailModal({ tournament, onClose, onRegister,
         return "Người mới";
     }
   };
-
-  const playerInitial = (name: string) => name.trim().charAt(0).toUpperCase() || "?";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -394,7 +393,7 @@ export default function TournamentDetailModal({ tournament, onClose, onRegister,
                           />
                         ) : (
                           <span className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-sm font-black text-slate-600">
-                            {playerInitial(registration.profile.full_name)}
+                            {avatarInitials(registration.profile.full_name)}
                           </span>
                         )}
                         <div className="min-w-0 flex-1">

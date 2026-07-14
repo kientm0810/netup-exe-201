@@ -43,14 +43,14 @@ def main() -> None:
         print(f"Bulk user import completed from {sql_path}.")
         return
 
-    candidate_count, supplied_count, synthetic_count, inserted_count, skipped_count = (
+    candidate_count, supplied_count, synthetic_count, inserted_count, not_inserted_count = (
         import_summary
     )
     print(
         "Bulk user import completed: "
         f"candidates={candidate_count}, supplied={supplied_count}, "
         f"synthetic={synthetic_count}, inserted={inserted_count}, "
-        f"skipped_existing={skipped_count}."
+        f"not_inserted={not_inserted_count}."
     )
 
 

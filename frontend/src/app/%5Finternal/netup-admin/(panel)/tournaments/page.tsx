@@ -4,6 +4,7 @@ import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Badge, Button, Card, Field, Notice, PageHero, StatCard, inputClassName } from "@/components/ui";
+import { avatarInitials } from "@/lib/avatar";
 import { errorMessage, formatFullDateTime, formatNumber, formatVnd } from "@/lib/format";
 
 import { adminFetch } from "../../_lib/auth";
@@ -108,10 +109,6 @@ function skillLabel(value: string) {
   return "Người mới";
 }
 
-function initial(name: string) {
-  return name.trim().charAt(0).toUpperCase() || "?";
-}
-
 export default function AdminTournamentsPage() {
   const router = useRouter();
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
@@ -166,7 +163,7 @@ export default function AdminTournamentsPage() {
     } catch (caught) {
       const nextError = errorMessage(caught, "Không tải được dữ liệu giải đấu");
       if (nextError === "admin_unauthorized") {
-        router.push("/login");
+        router.push("/_internal/netup-admin/login/");
         return;
       }
       setError(nextError);
@@ -681,7 +678,7 @@ export default function AdminTournamentsPage() {
                         <img src={item.profile.avatar_url} alt={item.profile.full_name} className="h-12 w-12 rounded-full object-cover" />
                       ) : (
                         <span className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-sm font-black text-slate-600">
-                          {initial(item.profile.full_name)}
+                          {avatarInitials(item.profile.full_name)}
                         </span>
                       )}
                       <div className="min-w-0">

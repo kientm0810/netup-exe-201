@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 
 import { Badge, Button, Card, Field, Notice, PageHero, StatCard, inputClassName } from "@/components/ui";
+import { avatarInitials } from "@/lib/avatar";
 import { apiFetch } from "@/lib/http";
 import { errorMessage, formatFullDateTime, formatNumber } from "@/lib/format";
 
@@ -29,10 +30,6 @@ function skillLabel(value: string) {
   if (value === "Advanced") return "Nâng cao";
   if (value === "Intermediate") return "Trung bình";
   return "Người mới";
-}
-
-function initial(name: string) {
-  return name.trim().charAt(0).toUpperCase() || "?";
 }
 
 export default function PlayerProfilePage() {
@@ -127,7 +124,7 @@ export default function PlayerProfilePage() {
               />
             ) : (
               <span className="flex h-16 w-16 items-center justify-center rounded-full bg-red-100 text-xl font-black text-red-800 animate-fade-in">
-                {initial(profile?.full_name ?? fullName)}
+                {avatarInitials(profile?.full_name ?? fullName)}
               </span>
             )}
             <div className="min-w-0">
@@ -188,7 +185,7 @@ export default function PlayerProfilePage() {
                   />
                 ) : (
                   <span className="flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-lg font-black text-red-800 animate-fade-in">
-                    {initial(fullName)}
+                    {avatarInitials(fullName)}
                   </span>
                 )}
                 <input

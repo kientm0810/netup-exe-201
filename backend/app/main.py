@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import asyncio
+import logging
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -10,10 +13,13 @@ from app.api.admin_auth import router as admin_auth_router
 from app.api.admin_operations import router as admin_operations_router
 from app.api.admin_owner_quotas import router as admin_owner_quotas_router
 from app.api.admin_owner_requests import router as admin_owner_requests_router
+from app.api.admin_owners import router as admin_owners_router
 from app.api.auth_google import router as auth_google_router
 from app.api.auth_user import router as auth_user_router
 from app.api.health import router as health_router
 from app.api.owner_checkins import router as owner_checkins_router
+from app.api.owner_commerce import owner_router as owner_commerce_router
+from app.api.owner_commerce import player_router as player_bills_router
 from app.api.owner_inventory import router as owner_inventory_router
 from app.api.owner_requests import router as owner_requests_router
 from app.api.player_assessment import router as player_assessment_router
@@ -33,10 +39,6 @@ from app.core.errors import register_error_handlers
 from app.core.logging import configure_logging
 from app.core.middleware import RequestIdMiddleware
 from app.services.cron import generate_daily_sessions
-
-import asyncio
-import logging
-from contextlib import asynccontextmanager
 
 logger = logging.getLogger(__name__)
 
@@ -94,10 +96,12 @@ def create_app() -> FastAPI:
     app.include_router(admin_auth_router, prefix="/api/v1")
     app.include_router(admin_operations_router, prefix="/api/v1")
     app.include_router(admin_owner_quotas_router, prefix="/api/v1")
+    app.include_router(admin_owners_router, prefix="/api/v1")
     app.include_router(owner_requests_router, prefix="/api/v1")
     app.include_router(admin_owner_requests_router, prefix="/api/v1")
     app.include_router(owner_inventory_router, prefix="/api/v1")
     app.include_router(owner_checkins_router, prefix="/api/v1")
+    app.include_router(owner_commerce_router, prefix="/api/v1")
     app.include_router(player_booking_router, prefix="/api/v1")
     app.include_router(player_assessment_router, prefix="/api/v1")
     app.include_router(player_matches_router, prefix="/api/v1")
@@ -109,6 +113,7 @@ def create_app() -> FastAPI:
     app.include_router(admin_tournaments_router, prefix="/api/v1")
     app.include_router(public_discovery_router, prefix="/api/v1")
     app.include_router(public_platform_router, prefix="/api/v1")
+    app.include_router(player_bills_router, prefix="/api/v1")
     app.include_router(health_router, prefix="/api/v1")
     app.include_router(player_chat_ws_router)
 

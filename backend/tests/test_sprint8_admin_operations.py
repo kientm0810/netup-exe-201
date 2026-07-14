@@ -111,7 +111,7 @@ def test_get_admin_dashboard_metrics_endpoint(  # type: ignore[no-untyped-def]
             "analytics": {
                 "total_website_visits": 486,
                 "new_users": 72,
-                "registered_accounts": 318,
+                "registered_accounts": 303,
                 "active_users": 154,
                 "returning_users": 98,
                 "seeded_visits": 470,
@@ -150,7 +150,7 @@ def test_get_admin_dashboard_metrics_endpoint(  # type: ignore[no-untyped-def]
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["analytics"]["registered_accounts"] == 318
+    assert payload["analytics"]["registered_accounts"] == 303
     assert payload["bookings"]["total"] == 100
     assert payload["payments"]["paid_amount_vnd"] == 12500000
 

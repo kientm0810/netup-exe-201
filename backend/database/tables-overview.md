@@ -1,8 +1,10 @@
 # NetUp Database Tables Overview
 
 ## Tong quan
-- Nguon schema: `backend/database/schema.sql`
-- Tong so bang trong schema goc: **27**
+- Nguon schema base: `backend/database/schema.sql`
+- Tong so bang trong schema goc: **27**. Sau migration
+  `0016_owner_commerce`, schema hien tai co **33** bang; 6 bang bo sung phuc
+  vu local login, ban hang tai quay va hoa don.
 
 Danh sach bang:
 1. `users`
@@ -32,6 +34,12 @@ Danh sach bang:
 25. `chat_room_members`
 26. `chat_messages`
 27. `audit_logs`
+28. `user_password_credentials`
+29. `user_login_audits`
+30. `owner_products`
+31. `sales_invoices`
+32. `sales_invoice_items`
+33. `inventory_movements`
 
 ## 1) User, Auth, Role
 
@@ -56,6 +64,20 @@ Danh sach bang:
 - Rang buoc unique:
   - `(provider, provider_user_id)`.
   - `(user_id, provider)`.
+
+### `user_password_credentials`
+- Muc dich: Thong tin dang nhap local cho tai khoan duoc admin cap truc tiep
+  (va tai khoan demo), tach biet voi Google OAuth.
+- Primary key + foreign key: `user_id -> users.id`.
+- Cot chinh: `username` (unique), `password_hash`, `must_change_password`,
+  `last_login_at`, `created_at`, `updated_at`.
+- Mat khau chi luu hash; API khong tra lai gia tri hash.
+
+### `user_login_audits`
+- Muc dich: Nhat ky thanh cong/that bai cua local login de gioi han tan suat
+  dang nhap sai.
+- Foreign key tuy chon: `user_id -> users.id`.
+- Cot chinh: `username_attempt`, `success`, `ip`, `user_agent`, `created_at`.
 
 ### `user_role_assignments`
 - Muc dich: Lich su gan/thu hoi role (player/owner/admin).
@@ -225,7 +247,48 @@ Danh sach bang:
   - Sau insert: auto cap nhat `bookings.status = checked_in`.
   - Sau insert: auto tao payment transaction cho khoan thu cash remaining.
 
-## 4) Assessment, Match, Elo
+## 4) Owner Commerce va Hoa don
+
+### `owner_products`
+- Muc dich: Danh muc hang hoa cua tung chu san; hien ho tro `water` va
+  `shuttlecock`.
+- Primary key: `id`.
+- Foreign key: `owner_user_id -> users.id`.
+- Cot chinh: `sku`, `name`, `category`, `unit`, `sale_price_vnd`,
+  `stock_quantity`, `is_active`, `created_at`, `updated_at`.
+- Rang buoc: `sku` unique trong pham vi mot owner; gia va ton kho khong am.
+
+### `sales_invoices`
+- Muc dich: Hoa don tai quay cua owner, co the gom tien thue san va hang hoa.
+- Primary key: `id`; `invoice_code` unique.
+- Foreign key:
+  - `owner_user_id -> users.id`.
+  - `customer_user_id -> users.id` (nullable cho khach vang lai).
+  - `booking_id -> bookings.id` (nullable).
+- Cot chinh: `status` (draft/paid/void), `payment_method` (cash/bank_transfer),
+  `subtotal_vnd`, `discount_vnd`, `total_vnd`, `source`, `issued_at`, `paid_at`.
+- Rang buoc: `total_vnd = subtotal_vnd - discount_vnd`; hoa don `paid` phai co
+  `paid_at`. API scope theo owner khi van hanh va theo `customer_user_id` khi
+  player xem lich su hoa don.
+
+### `sales_invoice_items`
+- Muc dich: Cac dong chi tiet cua hoa don: `court_rental`, `water` hoac
+  `shuttlecock`.
+- Foreign key: `invoice_id -> sales_invoices.id`; `product_id -> owner_products.id`
+  la optional cho dong tien thue san.
+- Cot chinh: `description`, `unit`, `quantity`, `unit_price_vnd`,
+  `line_total_vnd`.
+
+### `inventory_movements`
+- Muc dich: Lich su nhap va ban hang de audit ton kho.
+- Foreign key: `product_id -> owner_products.id`; `invoice_item_id` va
+  `created_by_user_id` la optional.
+- Cot chinh: `movement_type` (sale/restock/adjustment), `quantity_delta`,
+  `note`, `created_at`.
+- Service khoa row san pham khi tao hoa don, giam ton kho va ghi movement trong
+  cung transaction.
+
+## 5) Assessment, Match, Elo
 
 ### `player_assessments`
 - Muc dich: Ban ghi assessment da chot de khoi tao Elo ban dau.
@@ -311,7 +374,7 @@ Danh sach bang:
   - `old_elo`, `new_elo`, `delta`.
   - `reason`, `algorithm_version`, `created_at`.
 
-## 5) Pool Group Chat
+## 6) Pool Group Chat
 
 ### `chat_rooms`
 - Muc dich: Room chat cua pool.
@@ -351,7 +414,7 @@ Danh sach bang:
 - Trigger:
   - Validate sender dang la thanh vien active cua room.
 
-## 6) Audit
+## 7) Audit
 
 ### `audit_logs`
 - Muc dich: Nhat ky hanh dong quan tri/he thong.
@@ -360,7 +423,7 @@ Danh sach bang:
 - Cot chinh:
   - `event_type`, `entity_type`, `entity_id`, `payload`, `created_at`.
 
-## 7) Trigger va index noi bat
+## 8) Trigger va index noi bat
 - Trigger chinh:
   - `set_updated_at` cho nhieu bang co `updated_at`.
   - `set_session_ends_at` cho `sessions`.
@@ -373,5 +436,6 @@ Danh sach bang:
   - Booking active/user/session (`ux_booking_active_user_session`).
   - VNPay transaction uniqueness (`ux_payment_provider_txn`).
   - Session/court/time va open slots.
+  - Owner product, owner invoice/customer va inventory movement lookup.
   - Chat room/member/message lookup.
   - Elo history, feedback, audit lookup.

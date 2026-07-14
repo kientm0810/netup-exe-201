@@ -61,11 +61,15 @@ Useful URLs:
 - Admin dashboard: http://localhost:3000/_internal/netup-admin/dashboard
 - Admin config: http://localhost:3000/_internal/netup-admin/config
 - Admin owner approval: http://localhost:3000/_internal/netup-admin/owner-requests
+- Admin owner accounts: http://localhost:3000/_internal/netup-admin/owners
+- User login: http://localhost:3000/login
 - Owner dashboard: http://localhost:3000/owner/dashboard
 - Owner courts: http://localhost:3000/owner/courts
 - Owner check-in: http://localhost:3000/owner/check-in
+- Owner retail and invoices: http://localhost:3000/owner/sales
 - Player discovery: http://localhost:3000/player/discovery
 - Player bookings: http://localhost:3000/player/bookings
+- Player bills: http://localhost:3000/player/bills
 - Player matches: http://localhost:3000/player/matches
 - Google login entry: http://localhost:8000/api/v1/auth/google/start
 
@@ -85,6 +89,31 @@ Development admin login:
 Username: admin
 Password: admin12345
 ```
+
+## Demo data: CLB Badminton FPT
+
+Migrations `0016_owner_commerce` through
+`0019_normalize_shared_avatars` provide a clearly labelled local/demo dataset
+for the owner commerce flow. The login page also exposes this account for
+review:
+
+```text
+Username: clb.badminton.fpt
+Password: NetUp@FPT2026
+```
+
+The FPT demo receipts are marked `source=excel_seed`. They reconcile the 17
+daily totals in cell `B1` of `NETUP-Doanh thu ngày.xlsx`: 287 receipts totaling
+**17,914,000 VND**. Receipt lines split the total into court rental, water, and
+shuttlecocks solely for demonstration; they are not asserted to be original
+item-level sales records from the workbook.
+
+The dashboard's registered-account KPI always comes from `COUNT(users)`, not a
+chart fixture. On a clean local demo bootstrap, migrations plus the bulk import
+bring that count to **303** and will not add profiles above that target. Unique
+Google avatars are retained, while missing or legacy shared avatar URLs are
+normalized to initials derived from each person's name. The current append-only
+FPT import uses only `HE18`/`HS18` student-code prefixes.
 
 Google OAuth local callback:
 

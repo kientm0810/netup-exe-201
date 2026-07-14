@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Target, Zap, RefreshCw, CalendarCheck, Heart, Car, Snowflake, Lightbulb, Check, Clock, Users, Sparkles, Scale, Handshake, ShieldCheck } from "lucide-react";
 
 import { Badge, Button, ButtonLink, Card, EmptyState, Field, Notice, inputClassName } from "@/components/ui";
+import { avatarInitials } from "@/lib/avatar";
 import { API_BASE_URL, ApiError, apiFetch } from "@/lib/http";
 import {
   courtImageForSport,
@@ -241,10 +242,6 @@ function timeBucketMatches(startsAt: string, bucket: string) {
 function amenityIncludes(session: Session, keywords: string[]) {
   const text = session.amenities.join(" ").toLowerCase();
   return keywords.some((keyword) => text.includes(keyword));
-}
-
-function playerInitial(name: string) {
-  return name.trim().charAt(0).toUpperCase() || "?";
 }
 
 function playerSkillLabel(tier: string | null | undefined) {
@@ -1224,7 +1221,7 @@ export function BookingMarketplace({ variant }: { variant: Variant }) {
                                   />
                                 ) : (
                                   <span className="inline-flex h-6.5 w-6.5 items-center justify-center rounded-full bg-slate-200 text-[10px] font-black text-slate-600 ring-2 ring-white">
-                                    {playerInitial(p.name)}
+                                    {avatarInitials(p.name)}
                                   </span>
                                 )}
                               </button>
@@ -1451,7 +1448,7 @@ export function BookingMarketplace({ variant }: { variant: Variant }) {
                             />
                           ) : (
                             <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 text-[11px] font-black text-slate-600">
-                              {playerInitial(p.name)}
+                              {avatarInitials(p.name)}
                             </span>
                           )}
                           <span className="min-w-0 flex-1">
@@ -1623,7 +1620,7 @@ export function BookingMarketplace({ variant }: { variant: Variant }) {
                     />
                   ) : (
                     <span className="flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-lg font-black text-red-800">
-                      {playerInitial(selectedPlayerProfile.full_name)}
+                      {avatarInitials(selectedPlayerProfile.full_name)}
                     </span>
                   )}
                   <div className="min-w-0">
@@ -2274,5 +2271,4 @@ export function BookingMarketplace({ variant }: { variant: Variant }) {
     </div>
   );
 }
-
 

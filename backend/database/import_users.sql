@@ -1,10 +1,10 @@
 -- Append-only NetUp user import for the 2026-07-14 production rollout.
--- Sources: new_user.txt (52 supplied users) + 100 deterministic demo users.
+-- Sources: new_user.txt (52 supplied users) + 232 deterministic demo users.
 -- Safety guarantees:
 --   * existing public.users rows are never updated or deleted;
 --   * only rows returned by INSERT ... ON CONFLICT DO NOTHING receive role/Elo data;
 --   * the whole import is transactional and protected by an advisory lock;
---   * rerunning this file inserts zero duplicate users.
+--   * the local/demo account count never grows beyond the 303-account target.
 
 BEGIN;
 
@@ -46,9 +46,9 @@ WITH supplied_users(ordinal, student_code, full_name, email) AS (
     (17, 'HE187167', 'Lê Văn Triệu', 'trieulvhe187167@fpt.edu.vn'),
     (18, 'HE187201', 'Lê Xuân Hiếu', 'hieulxhe187201@fpt.edu.vn'),
     (19, 'HE187333', 'Phạm Đức Thuận', 'thuanpdhe187333@fpt.edu.vn'),
-    (20, 'HE190009', 'Đỗ Xuân Tài', 'taidxhe190009@fpt.edu.vn'),
-    (21, 'HE194070', 'Bùi Quang Huy', 'huybqhe194070@fpt.edu.vn'),
-    (22, 'HE201969', 'Nguyễn Đức Duy', 'duyndhe201969@fpt.edu.vn'),
+    (20, 'HE180009', 'Đỗ Xuân Tài', 'taidxhe180009@fpt.edu.vn'),
+    (21, 'HE184070', 'Bùi Quang Huy', 'huybqhe184070@fpt.edu.vn'),
+    (22, 'HE181969', 'Nguyễn Đức Duy', 'duyndhe181969@fpt.edu.vn'),
     (23, 'HS180005', 'Phạm Yến Nhi', 'nhipyhs180005@fpt.edu.vn'),
     (24, 'HS180176', 'Đào Thanh Thuỳ', 'thuydths180176@fpt.edu.vn'),
     (25, 'HS180285', 'Phạm Thị Duyên', 'duyenpths180285@fpt.edu.vn'),
@@ -97,7 +97,8 @@ SELECT
   email,
   full_name,
   NULL,
-  'https://lh3.googleusercontent.com/a/ACg8ocLoV_JBX9SyHokysffYl69xXsmmrBctjoIoHftZ6Zz-V6f9JNw=s96-c',
+  'https://ui-avatars.com/api/?name=' || replace(full_name, ' ', '+')
+    || '&background=4285F4&color=fff&size=96&bold=true&rounded=true&format=png&length=2',
   'Hà Nội',
   'Thạch Thất',
   now() - make_interval(days => 2 + ((ordinal * 7) % 45), hours => (ordinal * 5) % 18),
@@ -139,10 +140,13 @@ WITH surnames(surname_order, display_name, email_initial) AS (
 ), generated AS (
   SELECT
     52 + ((surname_order - 1) * 5) + profile_order AS ordinal,
-    'HE' || (200000 + (((surname_order - 1) * 5) + profile_order) * 37)::text AS student_code,
+    'HE18' || lpad((8000 + ((surname_order - 1) * 5) + profile_order)::text, 4, '0')
+      AS student_code,
     surnames.display_name || ' ' || name_profiles.display_name AS full_name,
     given_ascii || email_initial || middle_initials
-      || lower('HE' || (200000 + (((surname_order - 1) * 5) + profile_order) * 37)::text)
+      || lower(
+        'HE18' || lpad((8000 + ((surname_order - 1) * 5) + profile_order)::text, 4, '0')
+      )
       || '@fpt.edu.vn' AS email
   FROM surnames
   CROSS JOIN name_profiles
@@ -164,7 +168,8 @@ SELECT
   email,
   full_name,
   '09' || lpad(((ordinal * 7919) % 100000000)::text, 8, '0'),
-  'https://lh3.googleusercontent.com/a/ACg8ocLoV_JBX9SyHokysffYl69xXsmmrBctjoIoHftZ6Zz-V6f9JNw=s96-c',
+  'https://ui-avatars.com/api/?name=' || replace(full_name, ' ', '+')
+    || '&background=4285F4&color=fff&size=96&bold=true&rounded=true&format=png&length=2',
   'Hà Nội',
   (ARRAY['Thạch Thất', 'Quốc Oai', 'Nam Từ Liêm', 'Cầu Giấy', 'Hà Đông'])[
     1 + (ordinal % 5)
@@ -174,13 +179,106 @@ SELECT
   student_code
 FROM generated;
 
+-- A clean Docker bootstrap has fewer base accounts than an already-running
+-- environment. These 132 deterministic profiles let the append-only import
+-- fill the remaining seats up to 303 in both cases, while the capped insert
+-- below leaves a database already at 303 untouched.
+WITH surnames(surname_order, display_name, email_token) AS (
+  VALUES
+    (1, 'Nguyễn', 'nguyen'),
+    (2, 'Trần', 'tran'),
+    (3, 'Lê', 'le'),
+    (4, 'Phạm', 'pham'),
+    (5, 'Hoàng', 'hoang'),
+    (6, 'Vũ', 'vu'),
+    (7, 'Đặng', 'dang'),
+    (8, 'Bùi', 'bui'),
+    (9, 'Đỗ', 'do'),
+    (10, 'Dương', 'duong'),
+    (11, 'Phan', 'phan'),
+    (12, 'Võ', 'vo'),
+    (13, 'Đinh', 'dinh'),
+    (14, 'Lý', 'ly'),
+    (15, 'Trịnh', 'trinh'),
+    (16, 'Đoàn', 'doan'),
+    (17, 'Mai', 'mai'),
+    (18, 'Cao', 'cao'),
+    (19, 'Hồ', 'ho'),
+    (20, 'Tạ', 'ta'),
+    (21, 'Quách', 'quach'),
+    (22, 'Chu', 'chu')
+), name_profiles(profile_order, display_name, email_token) AS (
+  VALUES
+    (1, 'Minh Khang', 'minhkhang'),
+    (2, 'Bảo Ngọc', 'baongoc'),
+    (3, 'Quốc Huy', 'quochuy'),
+    (4, 'Khánh Vy', 'khanhvy'),
+    (5, 'Tuấn Minh', 'tuanminh'),
+    (6, 'Phương Anh', 'phuonganh')
+), generated AS (
+  SELECT
+    152 + ((surname_order - 1) * 6) + profile_order AS ordinal,
+    'HE18' || lpad((8100 + ((surname_order - 1) * 6) + profile_order)::text, 4, '0')
+      AS student_code,
+    surnames.display_name || ' ' || name_profiles.display_name AS full_name,
+    name_profiles.email_token || surnames.email_token
+      || lower(
+        'HE18' || lpad((8100 + ((surname_order - 1) * 6) + profile_order)::text, 4, '0')
+      )
+      || '@fpt.edu.vn' AS email
+  FROM surnames
+  CROSS JOIN name_profiles
+)
+INSERT INTO tmp_netup_user_candidates (
+  ordinal,
+  email,
+  full_name,
+  phone,
+  avatar_url,
+  city,
+  district,
+  created_at,
+  source,
+  student_code
+)
+SELECT
+  ordinal,
+  email,
+  full_name,
+  '09' || lpad(((ordinal * 7919) % 100000000)::text, 8, '0'),
+  'https://ui-avatars.com/api/?name=' || replace(full_name, ' ', '+')
+    || '&background=4285F4&color=fff&size=96&bold=true&rounded=true&format=png&length=2',
+  'Hà Nội',
+  (ARRAY['Thạch Thất', 'Quốc Oai', 'Nam Từ Liêm', 'Cầu Giấy', 'Hà Đông'])[
+    1 + (ordinal % 5)
+  ],
+  now() - make_interval(days => 4 + ((ordinal * 11) % 120), hours => (ordinal * 3) % 20),
+  'synthetic_demo_2026',
+  student_code
+FROM generated;
+
 CREATE TEMP TABLE tmp_netup_inserted_users (
   id uuid PRIMARY KEY,
   email citext NOT NULL UNIQUE
 ) ON COMMIT DROP;
 
--- The only public.users mutation in this file is INSERT. Conflicts are untouched.
-WITH inserted AS (
+-- The only public.users mutation in this file is INSERT. Existing accounts are
+-- filtered before the target cap so a conflicting candidate cannot consume a
+-- seat and leave the local demo below 303.
+WITH available_slots AS (
+  SELECT GREATEST(0, 303 - count(*))::integer AS remaining
+  FROM public.users
+), queued_candidates AS (
+  SELECT
+    candidates.*,
+    row_number() OVER (ORDER BY candidates.ordinal) AS queue_position
+  FROM tmp_netup_user_candidates candidates
+  WHERE NOT EXISTS (
+    SELECT 1
+    FROM public.users existing
+    WHERE existing.email = candidates.email::citext
+  )
+), inserted AS (
   INSERT INTO public.users (
     email,
     full_name,
@@ -202,8 +300,10 @@ WITH inserted AS (
     true,
     created_at,
     created_at
-  FROM tmp_netup_user_candidates
-  ORDER BY ordinal
+  FROM queued_candidates candidate
+  CROSS JOIN available_slots
+  WHERE candidate.queue_position <= available_slots.remaining
+  ORDER BY candidate.ordinal
   ON CONFLICT (email) DO NOTHING
   RETURNING id, email
 )
@@ -261,6 +361,6 @@ SELECT
       SELECT 1 FROM tmp_netup_inserted_users inserted
       WHERE inserted.email = candidates.email::citext
     )
-  ) AS skipped_existing_count;
+  ) AS not_inserted_count;
 
 COMMIT;
