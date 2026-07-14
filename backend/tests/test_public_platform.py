@@ -51,3 +51,39 @@ def test_create_contact_lead_endpoint(client: TestClient, monkeypatch) -> None: 
 
     assert response.status_code == 201
     assert response.json()["id"] == "lead-id"
+
+
+def test_record_website_visit_endpoint(client: TestClient, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    tracked_at = datetime(2026, 7, 14, 8, 30, tzinfo=UTC)
+
+    def fake_record_website_visit(**kwargs):  # type: ignore[no-untyped-def]
+        assert kwargs == {
+            "visitor_key": "visitor-12345678",
+            "session_key": "session-12345678",
+            "path": "/player/discovery",
+            "user_id": None,
+        }
+        return {
+            "ok": True,
+            "session_id": "visit-session-id",
+            "started_at": tracked_at,
+            "last_seen_at": tracked_at,
+            "page_view_count": 1,
+        }
+
+    monkeypatch.setattr(
+        "app.api.public_platform.record_website_visit",
+        fake_record_website_visit,
+    )
+
+    response = client.post(
+        "/api/v1/public/analytics/visit",
+        json={
+            "visitor_key": "visitor-12345678",
+            "session_key": "session-12345678",
+            "path": "/player/discovery",
+        },
+    )
+
+    assert response.status_code == 201
+    assert response.json()["page_view_count"] == 1

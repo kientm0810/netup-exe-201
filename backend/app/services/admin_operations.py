@@ -9,6 +9,7 @@ from sqlalchemy import text
 
 from app.core.errors import AppError
 from app.db.session import get_engine
+from app.services.web_analytics import get_web_analytics_metrics
 
 PLATFORM_FEE_MIN = Decimal("0")
 PLATFORM_FEE_MAX = Decimal("0.30")
@@ -441,6 +442,7 @@ def get_admin_dashboard_metrics() -> dict[str, Any]:
         ).one()
 
     return {
+        "analytics": get_web_analytics_metrics(period_days=30),
         "bookings": {
             "total": int(row.bookings_total),
             "awaiting_deposit": int(row.bookings_awaiting_deposit),

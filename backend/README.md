@@ -81,6 +81,10 @@ python -m pytest
 - `GET /api/v1/admin/dashboard/metrics`
 - `GET /api/v1/admin/audit-logs`
 
+Dashboard metrics include website visits, new visitors, registered accounts,
+active registered users, returning visitors, and a 14-day daily series. The
+analytics period for new/active/returning users is 30 days.
+
 The dev container seeds a local admin account when `ADMIN_SEED_ENABLED=true`.
 Admin login brute-force protection applies per username/IP window and returns
 `429 admin_login_rate_limited` when the threshold is exceeded.
@@ -134,10 +138,27 @@ bookings so the frontend can render matchmaking participants without mock data.
 
 - `GET /api/v1/public/platform-stats`
 - `POST /api/v1/public/contact-leads`
+- `POST /api/v1/public/analytics/visit`
 - `GET /api/v1/public/tournaments`
 
 `platform-stats` powers the homepage counters from live database counts.
 `contact-leads` stores partner/owner leads submitted from public frontend forms.
+`analytics/visit` upserts a browser visitor and a 30-minute visit session; it is
+safe to call again for page views in the same session.
+
+## Append-only User Import
+
+When `USER_IMPORT_ENABLED=true`, container startup runs the bundled import after
+Alembic. The import contains 52 supplied FPT users and 100 demo users. It uses
+`ON CONFLICT DO NOTHING`, never updates/deletes an existing `users` row, and
+assigns role/Elo only to rows inserted by the current transaction.
+
+Manual verification:
+
+```bash
+docker compose exec backend-api alembic upgrade head
+docker compose exec backend-api python -m app.scripts.import_users
+```
 
 ## Owner Check-in Endpoints
 

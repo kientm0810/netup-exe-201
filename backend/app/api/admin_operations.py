@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Query
@@ -11,8 +11,8 @@ from app.services.admin_auth import AdminPrincipal
 from app.services.admin_operations import (
     get_admin_config,
     get_admin_dashboard_metrics,
-    list_admin_users,
     list_admin_audit_logs,
+    list_admin_users,
     update_admin_config,
 )
 
@@ -75,7 +75,29 @@ class OwnerRequestMetricsResponse(BaseModel):
     rejected: int
 
 
+class WebAnalyticsDailyResponse(BaseModel):
+    date: date
+    total_visits: int
+    new_users: int
+    registered_accounts: int
+    active_users: int
+    returning_users: int
+
+
+class WebAnalyticsMetricsResponse(BaseModel):
+    total_website_visits: int
+    new_users: int
+    registered_accounts: int
+    active_users: int
+    returning_users: int
+    seeded_visits: int
+    period_days: int
+    generated_at: datetime
+    daily: list[WebAnalyticsDailyResponse]
+
+
 class AdminDashboardMetricsResponse(BaseModel):
+    analytics: WebAnalyticsMetricsResponse
     bookings: BookingMetricsResponse
     payments: PaymentMetricsResponse
     checkins: CheckinMetricsResponse

@@ -108,6 +108,26 @@ def test_get_admin_dashboard_metrics_endpoint(  # type: ignore[no-untyped-def]
     monkeypatch.setattr(
         "app.api.admin_operations.get_admin_dashboard_metrics",
         lambda: {
+            "analytics": {
+                "total_website_visits": 486,
+                "new_users": 72,
+                "registered_accounts": 318,
+                "active_users": 154,
+                "returning_users": 98,
+                "seeded_visits": 470,
+                "period_days": 30,
+                "generated_at": datetime(2026, 7, 14, 8, 0, tzinfo=UTC),
+                "daily": [
+                    {
+                        "date": "2026-07-14",
+                        "total_visits": 16,
+                        "new_users": 4,
+                        "registered_accounts": 3,
+                        "active_users": 9,
+                        "returning_users": 5,
+                    }
+                ],
+            },
             "bookings": {
                 "total": 100,
                 "awaiting_deposit": 12,
@@ -130,6 +150,7 @@ def test_get_admin_dashboard_metrics_endpoint(  # type: ignore[no-untyped-def]
 
     assert response.status_code == 200
     payload = response.json()
+    assert payload["analytics"]["registered_accounts"] == 318
     assert payload["bookings"]["total"] == 100
     assert payload["payments"]["paid_amount_vnd"] == 12500000
 

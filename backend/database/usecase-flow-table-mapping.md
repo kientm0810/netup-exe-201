@@ -35,7 +35,7 @@ Quy uoc coverage:
 | UC-OW-04 | Owner cap nhat gioi han thue | `courts` | `audit_logs` | Covered | `max_rental_duration_minutes` da constraint |
 | UC-OW-05 | Owner check-in booking | `checkins`, `bookings` | `payment_transactions`, `courts` | Covered | Trigger enforce owner dung san + cash due |
 | UC-AD-01 | Admin cap nhat config he thong | `admin_configs` | `audit_logs` | Covered | Da co table singleton config |
-| UC-AD-02 | Admin dashboard van hanh | `bookings`, `sessions`, `payment_transactions` | `owner_service_requests`, `users` | Covered | Dashboard co the aggregate tu bang hien co |
+| UC-AD-02 | Admin dashboard van hanh + tang truong user | `web_visitors`, `web_visit_sessions`, `users` | `bookings`, `sessions`, `payment_transactions`, `owner_service_requests` | Covered | Traffic that duoc track theo visitor/session; 5 KPI va daily series duoc aggregate tai API |
 
 ## 3) Flow chi tiet theo nhom
 

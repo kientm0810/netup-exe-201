@@ -56,6 +56,17 @@ def require_user(
     return user
 
 
+def optional_user(
+    request: Request,
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
+) -> UserPrincipal | None:
+    """Return the current user when available without making a public route private."""
+    token = _bearer_token(credentials) or request.cookies.get("netup_user_access_token")
+    if token is None:
+        return None
+    return principal_from_user_access_token(token)
+
+
 def require_role(required_role: str):
     def dependency(user: Annotated[UserPrincipal, Depends(require_user)]) -> UserPrincipal:
         if required_role not in user.roles and not user_has_active_role(user.id, required_role):

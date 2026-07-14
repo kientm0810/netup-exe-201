@@ -177,6 +177,40 @@ CREATE UNIQUE INDEX IF NOT EXISTS ux_user_role_active
 ON public.user_role_assignments(user_id, role)
 WHERE revoked_at IS NULL;
 
+-- Website analytics. A visitor persists in browser local storage, while a visit
+-- session rotates after 30 minutes of inactivity. Registered users are linked
+-- when an authenticated cookie is present; anonymous traffic remains measurable.
+CREATE TABLE IF NOT EXISTS public.web_visitors (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  visitor_key varchar(80) NOT NULL UNIQUE,
+  user_id uuid REFERENCES public.users(id) ON DELETE SET NULL,
+  first_seen_at timestamptz NOT NULL DEFAULT now(),
+  last_seen_at timestamptz NOT NULL DEFAULT now(),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CHECK (length(visitor_key) BETWEEN 8 AND 80),
+  CHECK (last_seen_at >= first_seen_at)
+);
+
+CREATE TABLE IF NOT EXISTS public.web_visit_sessions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  session_key varchar(80) NOT NULL UNIQUE,
+  visitor_id uuid NOT NULL REFERENCES public.web_visitors(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES public.users(id) ON DELETE SET NULL,
+  entry_path varchar(500) NOT NULL,
+  last_path varchar(500) NOT NULL,
+  page_view_count integer NOT NULL DEFAULT 1 CHECK (page_view_count >= 1),
+  source varchar(20) NOT NULL DEFAULT 'web' CHECK (source IN ('web', 'seed')),
+  started_at timestamptz NOT NULL DEFAULT now(),
+  last_seen_at timestamptz NOT NULL DEFAULT now(),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CHECK (length(session_key) BETWEEN 8 AND 80),
+  CHECK (length(entry_path) BETWEEN 1 AND 500),
+  CHECK (length(last_path) BETWEEN 1 AND 500),
+  CHECK (last_seen_at >= started_at)
+);
+
 CREATE TABLE IF NOT EXISTS public.owner_service_requests (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
@@ -824,6 +858,16 @@ CREATE TRIGGER trg_users_updated_at
 BEFORE UPDATE ON public.users
 FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
+DROP TRIGGER IF EXISTS trg_web_visitors_updated_at ON public.web_visitors;
+CREATE TRIGGER trg_web_visitors_updated_at
+BEFORE UPDATE ON public.web_visitors
+FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+DROP TRIGGER IF EXISTS trg_web_visit_sessions_updated_at ON public.web_visit_sessions;
+CREATE TRIGGER trg_web_visit_sessions_updated_at
+BEFORE UPDATE ON public.web_visit_sessions
+FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
 DROP TRIGGER IF EXISTS trg_admin_configs_updated_at ON public.admin_configs;
 CREATE TRIGGER trg_admin_configs_updated_at
 BEFORE UPDATE ON public.admin_configs
@@ -936,6 +980,15 @@ FOR EACH ROW EXECUTE FUNCTION public.validate_chat_message_row();
 
 -- Useful indexes
 CREATE INDEX IF NOT EXISTS idx_oauth_user_id ON public.oauth_identities(user_id);
+CREATE INDEX IF NOT EXISTS idx_web_visitors_user ON public.web_visitors(user_id)
+WHERE user_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_web_visitors_first_seen ON public.web_visitors(first_seen_at DESC);
+CREATE INDEX IF NOT EXISTS idx_web_visit_sessions_started ON public.web_visit_sessions(started_at DESC);
+CREATE INDEX IF NOT EXISTS idx_web_visit_sessions_visitor_started
+ON public.web_visit_sessions(visitor_id, started_at DESC);
+CREATE INDEX IF NOT EXISTS idx_web_visit_sessions_user_seen
+ON public.web_visit_sessions(user_id, last_seen_at DESC)
+WHERE user_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_owner_requests_status ON public.owner_service_requests(status, submitted_at DESC);
 CREATE INDEX IF NOT EXISTS idx_contact_leads_status_created ON public.contact_leads(status, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_contact_leads_email_created ON public.contact_leads(email, created_at DESC);

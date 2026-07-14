@@ -134,6 +134,17 @@ def test_admin_endpoints_smoke(  # type: ignore[no-untyped-def]
     monkeypatch.setattr(
         "app.api.admin_operations.get_admin_dashboard_metrics",
         lambda: {
+            "analytics": {
+                "total_website_visits": 0,
+                "new_users": 0,
+                "registered_accounts": 0,
+                "active_users": 0,
+                "returning_users": 0,
+                "seeded_visits": 0,
+                "period_days": 30,
+                "generated_at": now,
+                "daily": [],
+            },
             "bookings": {
                 "total": 0,
                 "awaiting_deposit": 0,

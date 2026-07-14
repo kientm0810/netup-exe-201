@@ -2,32 +2,36 @@
 
 ## Tong quan
 - Nguon schema: `backend/database/schema.sql`
-- Tong so bang: **23**
+- Tong so bang trong schema goc: **27**
 
 Danh sach bang:
 1. `users`
 2. `oauth_identities`
 3. `user_role_assignments`
-4. `owner_service_requests`
-5. `admin_configs`
-6. `court_complexes`
-7. `courts`
-8. `sessions`
-9. `pool_posts`
-10. `bookings`
-11. `payment_transactions`
-12. `checkins`
-13. `player_assessments`
-14. `video_assessments`
-15. `elo_ratings`
-16. `match_events`
-17. `match_participants`
-18. `match_feedback`
-19. `elo_rating_history`
-20. `chat_rooms`
-21. `chat_room_members`
-22. `chat_messages`
-23. `audit_logs`
+4. `web_visitors`
+5. `web_visit_sessions`
+6. `owner_service_requests`
+7. `contact_leads`
+8. `admin_configs`
+9. `court_complexes`
+10. `courts`
+11. `sessions`
+12. `pool_posts`
+13. `owner_post_quotas`
+14. `bookings`
+15. `payment_transactions`
+16. `checkins`
+17. `player_assessments`
+18. `video_assessments`
+19. `elo_ratings`
+20. `match_events`
+21. `match_participants`
+22. `match_feedback`
+23. `elo_rating_history`
+24. `chat_rooms`
+25. `chat_room_members`
+26. `chat_messages`
+27. `audit_logs`
 
 ## 1) User, Auth, Role
 
@@ -86,6 +90,22 @@ Danh sach bang:
   - `matching_radius_km`, `no_show_strike_limit`, `auto_release_minutes`.
   - `video_assessment_max_size_mb`, `video_assessment_max_duration_seconds`.
   - `support_hotline_enabled`, `updated_at`.
+
+### `web_visitors`
+- Muc dich: Dinh danh mot trinh duyet lau dai bang random `visitor_key`.
+- Foreign key tuy chon: `user_id -> users.id` khi visitor da dang nhap.
+- Cot chinh: `first_seen_at`, `last_seen_at`, `created_at`, `updated_at`.
+- Rang buoc: `visitor_key` unique; khong luu IP hay du lieu fingerprint nhay cam.
+
+### `web_visit_sessions`
+- Muc dich: Moi row la mot luot truy cap website; frontend xoay `session_key`
+  sau 30 phut khong hoat dong.
+- Foreign key: `visitor_id -> web_visitors.id`; `user_id -> users.id` tuy chon.
+- Cot chinh: `entry_path`, `last_path`, `page_view_count`, `source`,
+  `started_at`, `last_seen_at`.
+- Rang buoc: `session_key` unique, nen goi lai trong cung phien chi tang page view,
+  khong lam tang tong luot truy cap.
+- `source=seed` la lich su khoi tao theo user; `source=web` la traffic that.
 
 ## 2) Court Inventory va Session
 

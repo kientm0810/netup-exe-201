@@ -14,6 +14,24 @@ type AdminProfile = {
 };
 
 type AdminDashboardMetrics = {
+  analytics: {
+    total_website_visits: number;
+    new_users: number;
+    registered_accounts: number;
+    active_users: number;
+    returning_users: number;
+    seeded_visits: number;
+    period_days: number;
+    generated_at: string;
+    daily: Array<{
+      date: string;
+      total_visits: number;
+      new_users: number;
+      registered_accounts: number;
+      active_users: number;
+      returning_users: number;
+    }>;
+  };
   bookings: {
     total: number;
     awaiting_deposit: number;
@@ -178,6 +196,109 @@ export default function AdminDashboardPage() {
       />
 
       {error ? <Notice tone="danger">{error}</Notice> : null}
+
+      <Card className="space-y-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-red-800">
+              Website analytics
+            </p>
+            <h2 className="mt-2 font-heading text-xl font-semibold text-ink">
+              Sức khỏe tăng trưởng người dùng
+            </h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Visitor và phiên truy cập được ghi nhận thật; lịch sử ban đầu được khởi tạo tỷ lệ theo dữ liệu tài khoản.
+            </p>
+          </div>
+          <Badge tone="info">
+            Cập nhật {formatFullDateTime(metrics?.analytics.generated_at)}
+          </Badge>
+        </div>
+
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+          <StatCard
+            label="Tổng lượt truy cập website"
+            value={formatNumber(metrics?.analytics.total_website_visits)}
+            helper="Toàn thời gian"
+            tone="accent"
+          />
+          <StatCard
+            label="Số người dùng mới"
+            value={formatNumber(metrics?.analytics.new_users)}
+            helper={`${metrics?.analytics.period_days ?? 30} ngày gần nhất`}
+            tone="success"
+          />
+          <StatCard
+            label="Số tài khoản đăng ký"
+            value={formatNumber(metrics?.analytics.registered_accounts)}
+            helper="Tổng tài khoản trong hệ thống"
+          />
+          <StatCard
+            label="Số người dùng hoạt động"
+            value={formatNumber(metrics?.analytics.active_users)}
+            helper={`${metrics?.analytics.period_days ?? 30} ngày gần nhất`}
+            tone="warning"
+          />
+          <StatCard
+            label="Số người dùng quay lại"
+            value={formatNumber(metrics?.analytics.returning_users)}
+            helper="Có từ 2 phiên truy cập"
+          />
+        </section>
+      </Card>
+
+      <Card className="space-y-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="font-heading text-xl font-semibold text-ink">Xu hướng 14 ngày</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Đối chiếu traffic, tài khoản mới, active user và tỷ lệ quay lại theo ngày.
+            </p>
+          </div>
+          <Badge>{metrics?.analytics.daily.length ?? 0} ngày</Badge>
+        </div>
+
+        <div className="overflow-x-auto rounded-lg border border-slate-200">
+          <table className="min-w-full divide-y divide-slate-200 text-sm">
+            <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+              <tr>
+                <th className="px-4 py-3">Ngày</th>
+                <th className="px-4 py-3">Lượt truy cập</th>
+                <th className="px-4 py-3">User mới</th>
+                <th className="px-4 py-3">Đăng ký mới</th>
+                <th className="px-4 py-3">Hoạt động</th>
+                <th className="px-4 py-3">Quay lại</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 bg-white">
+              {(metrics?.analytics.daily ?? []).map((item) => (
+                <tr key={item.date}>
+                  <td className="whitespace-nowrap px-4 py-3 font-semibold text-slate-900">
+                    {new Date(`${item.date}T00:00:00`).toLocaleDateString("vi-VN")}
+                  </td>
+                  <td className="px-4 py-3 text-slate-700">{formatNumber(item.total_visits)}</td>
+                  <td className="px-4 py-3 text-slate-700">{formatNumber(item.new_users)}</td>
+                  <td className="px-4 py-3 text-slate-700">{formatNumber(item.registered_accounts)}</td>
+                  <td className="px-4 py-3 text-slate-700">{formatNumber(item.active_users)}</td>
+                  <td className="px-4 py-3 text-slate-700">{formatNumber(item.returning_users)}</td>
+                </tr>
+              ))}
+              {!metrics?.analytics.daily.length ? (
+                <tr>
+                  <td className="px-4 py-6 text-center text-slate-500" colSpan={6}>
+                    Chưa có dữ liệu analytics theo ngày.
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      <div>
+        <h2 className="font-heading text-xl font-semibold text-ink">Chỉ số vận hành</h2>
+        <p className="mt-1 text-sm text-slate-600">Booking, thanh toán, check-in và owner.</p>
+      </div>
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
