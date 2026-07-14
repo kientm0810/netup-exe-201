@@ -1,14 +1,18 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { Button, Card, Field, Notice, inputClassName } from "@/components/ui";
-import { API_BASE_URL, apiFetch } from "@/lib/http";
+import { API_BASE_URL, ApiError, apiFetch } from "@/lib/http";
 
 type UserProfile = {
   roles: string[];
+};
+
+type AdminLoginResponse = {
+  access_token: string;
+  refresh_token: string;
 };
 
 function googleLoginUrl() {
@@ -62,7 +66,22 @@ export default function LoginPage() {
       });
       router.replace(profile.roles.includes("owner") ? "/owner/dashboard/" : "/");
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Đăng nhập không thành công");
+      if (!(caught instanceof ApiError) || caught.status !== 401) {
+        setError(caught instanceof Error ? caught.message : "Đăng nhập không thành công");
+        return;
+      }
+
+      try {
+        const admin = await apiFetch<AdminLoginResponse>("/api/v1/admin/auth/login", {
+          method: "POST",
+          body: JSON.stringify({ username, password }),
+        });
+        window.localStorage.setItem("netup_admin_access_token", admin.access_token);
+        window.localStorage.setItem("netup_admin_refresh_token", admin.refresh_token);
+        router.replace("/_internal/netup-admin/dashboard/");
+      } catch (adminCaught) {
+        setError(adminCaught instanceof Error ? adminCaught.message : "Đăng nhập không thành công");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -120,12 +139,6 @@ export default function LoginPage() {
               {isSubmitting ? "Đang đăng nhập..." : "Đăng nhập"}
             </Button>
 
-            <p className="text-center text-xs text-slate-500">
-              Bạn là quản trị viên?{" "}
-              <Link href="/_internal/netup-admin/login/" className="font-semibold text-red-800 hover:underline">
-                Đăng nhập trang admin
-              </Link>
-            </p>
           </form>
 
           <Card className="space-y-3 border-slate-200">

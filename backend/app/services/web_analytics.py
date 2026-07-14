@@ -184,8 +184,8 @@ def get_web_analytics_metrics(*, period_days: int = 30) -> dict[str, Any]:
                     AS total_website_visits,
                   (
                     SELECT count(*)::bigint
-                    FROM public.web_visitors visitors, limits
-                    WHERE visitors.first_seen_at >= limits.period_start
+                    FROM public.users user_account, limits
+                    WHERE user_account.created_at >= limits.period_start
                   ) AS new_users,
                   (SELECT count(*)::bigint FROM public.users) AS registered_accounts,
                   (
@@ -229,12 +229,12 @@ def get_web_analytics_metrics(*, period_days: int = 30) -> dict[str, Any]:
                     - (:series_days - 1)
                   )::timestamp AT TIME ZONE 'Asia/Bangkok'
                   GROUP BY 1
-                ), new_visitor_days AS (
+                ), new_user_days AS (
                   SELECT
-                    (first_seen_at AT TIME ZONE 'Asia/Bangkok')::date AS metric_date,
+                    (created_at AT TIME ZONE 'Asia/Bangkok')::date AS metric_date,
                     count(*)::int AS new_users
-                  FROM public.web_visitors
-                  WHERE first_seen_at >= (
+                  FROM public.users
+                  WHERE created_at >= (
                     (now() AT TIME ZONE 'Asia/Bangkok')::date
                     - (:series_days - 1)
                   )::timestamp AT TIME ZONE 'Asia/Bangkok'
@@ -264,7 +264,7 @@ def get_web_analytics_metrics(*, period_days: int = 30) -> dict[str, Any]:
                 SELECT
                   days.metric_date,
                   COALESCE(session_days.total_visits, 0)::int AS total_visits,
-                  COALESCE(new_visitor_days.new_users, 0)::int AS new_users,
+                  COALESCE(new_user_days.new_users, 0)::int AS new_users,
                   (
                     SELECT count(*)::int
                     FROM public.users user_account
@@ -276,7 +276,7 @@ def get_web_analytics_metrics(*, period_days: int = 30) -> dict[str, Any]:
                   COALESCE(returning_days.returning_users, 0)::int AS returning_users
                 FROM days
                 LEFT JOIN session_days USING (metric_date)
-                LEFT JOIN new_visitor_days USING (metric_date)
+                LEFT JOIN new_user_days USING (metric_date)
                 LEFT JOIN returning_days USING (metric_date)
                 ORDER BY days.metric_date
                 """
