@@ -54,7 +54,7 @@ services:
       CORS_ORIGINS: "${CORS_ORIGINS:-http://netup.io.vn,http://13.251.104.233}"
       FRONTEND_BASE_URL: "${PUBLIC_BASE_URL:-http://netup.io.vn}"
       BACKEND_BASE_URL: "${PUBLIC_BASE_URL:-http://netup.io.vn}"
-      GOOGLE_REDIRECT_URI: "${PUBLIC_BASE_URL:-http://netup.io.vn}/api/v1/auth/google/callback"
+      GOOGLE_REDIRECT_URI: "${GOOGLE_REDIRECT_URI:-http://localhost:8000/api/v1/auth/google/callback}"
       VNPAY_RETURN_URL: "${PUBLIC_BASE_URL:-http://netup.io.vn}/api/v1/payments/vnpay/return"
     ports:
       - "${BACKEND_HOST_BIND:-127.0.0.1}:${BACKEND_HOST_PORT:-8000}:8000"

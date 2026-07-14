@@ -84,6 +84,7 @@ def main() -> None:
             "NETUP_ENV_TARGET": target,
             "PUBLIC_BASE_URL": public_base_url,
             "NEXT_PUBLIC_API_BASE_URL": api_base_url,
+            "GOOGLE_REDIRECT_URI": f"{api_base_url}/api/v1/auth/google/callback",
         },
     )
     write_env(
