@@ -23,22 +23,14 @@ def _estimated_analytics(*, metrics: dict[str, Any]) -> dict[str, Any]:
     active_users = min(registered_accounts, round(registered_accounts * activity_rate))
     returning_users = min(active_users, round(active_users * 0.44))
     daily: list[dict[str, Any]] = []
-    launch_day_index = max(0, period_days - 14)
-    campaign_day_index = max(0, period_days - 10)
-
     for index, row in enumerate(metrics["daily"]):
         wave = ((index * 17 + period_days * 7) % 11) - 5
         registered_at_day = int(row["registered_accounts"])
-        base_rate = (
-            0.006
-            if index < launch_day_index
-            else 0.012
-            if index < campaign_day_index
-            else 0.080
-        )
+        new_users = int(row["new_users"])
+        base_rate = 0.008 if new_users < 10 else 0.015
         daily_active = min(
             registered_at_day,
-            max(1, round(registered_at_day * (base_rate + wave * 0.002))),
+            max(1, round(new_users * 0.72 + registered_at_day * (base_rate + wave * 0.001))),
         )
         daily_returning = min(daily_active, max(0, round(daily_active * 0.43)))
         daily.append(
