@@ -20,7 +20,7 @@ import {
 
 type BookingMode = "solo" | "full_court";
 type PaymentMethod = "vnpay" | "cash";
-type PaymentMethodKey = "atm" | "visa" | "momo" | "zalopay" | "applepay" | "googlepay";
+type PaymentMethodKey = "atm" | "visa" | "momo" | "zalopay" | "applepay" | "googlepay" | "cash";
 
 type SessionDetail = {
   id: string;
@@ -175,12 +175,12 @@ function BookingCreateContent() {
     const seats = mode === "full_court" ? session.max_slots : Math.max(1, Math.min(2, Number(seatsBooked || "1")));
     const base = mode === "full_court" ? session.full_court_price_vnd : session.slot_price_vnd * seats;
     
-    // Apply 5% discount for online payment
-    const discount = Math.round(base * 0.05);
+    // Online checkout receives the VNPay promotion; cash is paid in full at the venue.
+    const discount = selectedMethod === "cash" ? 0 : Math.round(base * 0.05);
     const total = base - discount;
     
     return { seats, base, discount, total };
-  }, [mode, seatsBooked, session]);
+  }, [mode, seatsBooked, selectedMethod, session]);
 
   // Combined function: Create booking -> get deposit intent -> redirect to VNPay
   async function handlePaymentSubmit(event: FormEvent) {
@@ -193,7 +193,7 @@ function BookingCreateContent() {
       // 1. Create booking payload
       const payload: Record<string, unknown> = {
         mode,
-        payment_method: "vnpay", // Force VNPay for online checkout
+        payment_method: selectedMethod === "cash" ? "cash" : "vnpay",
       };
       const ids = sessionIdsParam ? sessionIdsParam.split(",") : (sessionId ? [sessionId] : []);
       if (ids.length > 1) {
@@ -211,6 +211,12 @@ function BookingCreateContent() {
         credentials: "include",
         body: JSON.stringify(payload),
       });
+
+      if (selectedMethod === "cash") {
+        await loadSuccessDetails(createdBooking.id);
+        setIsSubmitting(false);
+        return;
+      }
 
       // 2. Request VNPay payment URL for deposit
       const intent = await apiFetch<DepositIntent>(`/api/v1/player/bookings/${createdBooking.id}/deposit-payment`, {
@@ -307,7 +313,7 @@ function BookingCreateContent() {
   }
 
   // Render Payment Success State (Success Page)
-  if (statusParam === "success" && successBooking) {
+  if (successBooking) {
     const sBooking = successBooking;
     const sSession = successSession;
 
@@ -336,7 +342,8 @@ function BookingCreateContent() {
 
     // Math calculation matching the checkout logic
     const basePrice = sBooking.base_price_vnd + sBooking.platform_fee_vnd + sBooking.floor_fee_vnd;
-    const discountPrice = Math.round(basePrice * 0.05);
+    const isCashBooking = sBooking.payment_method === "cash";
+    const discountPrice = isCashBooking ? 0 : Math.round(basePrice * 0.05);
 
     return (
       <div className="grid gap-6 lg:grid-cols-[1.1fr_1.1fr] xl:grid-cols-[1.15fr_1.15fr] items-start">
@@ -351,11 +358,10 @@ function BookingCreateContent() {
             
             <div className="space-y-2">
               <h1 className="font-heading text-3xl font-black text-slate-900 tracking-tight">
-                Thanh toán <span className="text-emerald-600">thành công!</span>
+                {isCashBooking ? "Đặt sân thành công!" : <>Thanh toán <span className="text-emerald-600">thành công!</span></>}
               </h1>
               <p className="text-sm text-slate-500 font-semibold leading-relaxed">
-                Bạn đã tham gia trận đấu thành công. <br />
-                Hẹn gặp bạn trên sân!
+                {isCashBooking ? "Vui lòng thanh toán khi check-in tại sân." : <>Bạn đã tham gia trận đấu thành công. <br />Hẹn gặp bạn trên sân!</>}
               </p>
             </div>
 
@@ -418,7 +424,7 @@ function BookingCreateContent() {
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div className="flex items-center gap-2 text-emerald-600 font-bold text-xs">
                 <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-[10px]">✓</span>
-                Thanh toán thành công
+                {isCashBooking ? "Thanh toán tại sân" : "Thanh toán thành công"}
               </div>
               <span className="text-xs text-slate-450 font-bold">Mã đơn: #{sBooking.booking_code}</span>
             </div>
@@ -481,8 +487,8 @@ function BookingCreateContent() {
                   <span>{formatVnd(basePrice)}</span>
                 </div>
                 <div className="flex justify-between text-xs font-semibold text-emerald-600">
-                  <span>Ưu đãi (VNPay -5%)</span>
-                  <span>-{formatVnd(discountPrice)}</span>
+                  <span>{isCashBooking ? "Ưu đãi" : "Ưu đãi (VNPay -5%)"}</span>
+                  <span>{isCashBooking ? formatVnd(0) : `-${formatVnd(discountPrice)}`}</span>
                 </div>
                 <div className="flex justify-between items-baseline pt-2 border-t border-slate-100">
                   <span className="text-xs font-bold text-slate-800">Tổng thanh toán</span>
@@ -496,19 +502,16 @@ function BookingCreateContent() {
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Phương thức thanh toán</h3>
               <div className="flex items-center justify-between p-3.5 bg-slate-50 rounded-2xl border border-slate-150">
                 <div className="flex items-center gap-3">
-                  <div className="h-8 w-12 rounded-lg bg-white border border-slate-200 flex items-center justify-center shrink-0 shadow-xs">
-                    <span className="text-[11px] font-black tracking-tight">
-                      <span className="text-[#ed1c24]">VN</span>
-                      <span className="text-[#005baa]">PAY</span>
-                    </span>
+                  <div className="h-8 w-12 rounded-lg bg-white border border-slate-200 flex items-center justify-center shrink-0 shadow-xs text-sm">
+                    {isCashBooking ? "💵" : <span className="text-[11px] font-black tracking-tight"><span className="text-[#ed1c24]">VN</span><span className="text-[#005baa]">PAY</span></span>}
                   </div>
                   <div className="text-xs">
-                    <p className="font-bold text-slate-800">Thẻ ATM / Tài khoản ngân hàng</p>
-                    <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Thanh toán cọc qua cổng VNPay</p>
+                    <p className="font-bold text-slate-800">{isCashBooking ? "Tiền mặt tại sân" : "Thẻ ATM / Tài khoản ngân hàng"}</p>
+                    <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{isCashBooking ? "Thanh toán toàn bộ khi check-in tại sân" : "Thanh toán cọc qua cổng VNPay"}</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs font-extrabold text-emerald-600">Đã cọc: {formatVnd(sBooking.deposit_required_vnd)}</p>
+                  <p className="text-xs font-extrabold text-emerald-600">{isCashBooking ? "Thanh toán tại sân" : `Đã cọc: ${formatVnd(sBooking.deposit_required_vnd)}`}</p>
                   <p className="text-[9px] text-slate-400 font-bold mt-0.5">Còn lại: {formatVnd(sBooking.remaining_due_vnd)} (tại sân)</p>
                 </div>
               </div>
@@ -653,6 +656,17 @@ function BookingCreateContent() {
                   </div>
                 ),
                 disabled: false 
+              },
+              {
+                key: "cash",
+                title: "Tiền mặt tại sân",
+                sub: "Không cần thanh toán online. Thanh toán toàn bộ khi check-in tại sân.",
+                logo: (
+                  <div className="flex h-8 w-12 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-sm shrink-0 select-none">
+                    💵
+                  </div>
+                ),
+                disabled: false,
               },
               { 
                 key: "applepay", 
@@ -805,7 +819,7 @@ function BookingCreateContent() {
                   <span>{formatVnd(estimate.base)}</span>
                 </div>
                 <div className="flex justify-between text-xs font-semibold text-emerald-600">
-                  <span className="text-slate-455 font-bold">Ưu đãi (VNPay -5%)</span>
+                  <span className="text-slate-455 font-bold">{selectedMethod === "cash" ? "Ưu đãi" : "Ưu đãi (VNPay -5%)"}</span>
                   <span>-{formatVnd(estimate.discount)}</span>
                 </div>
                 <div className="flex justify-between items-baseline pt-2 border-t border-slate-100">

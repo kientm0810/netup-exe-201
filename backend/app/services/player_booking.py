@@ -848,11 +848,17 @@ def create_booking(*, player_user_id: str, data: dict[str, Any]) -> dict[str, An
         )
         floor_fee_vnd = int(config["floor_fee_vnd"])
         total_price_vnd = base_price_vnd + platform_fee_vnd + floor_fee_vnd
-        deposit_required_vnd = _round_money(
-            Decimal(total_price_vnd) * Decimal(config["deposit_percent"]) / Decimal(100)
-        )
-        deposit_required_vnd = max(deposit_required_vnd, 1)
-        remaining_due_vnd = total_price_vnd - deposit_required_vnd
+        if payment_method == "cash":
+            deposit_required_vnd = 0
+            remaining_due_vnd = total_price_vnd
+            booking_status = "confirmed"
+        else:
+            deposit_required_vnd = _round_money(
+                Decimal(total_price_vnd) * Decimal(config["deposit_percent"]) / Decimal(100)
+            )
+            deposit_required_vnd = max(deposit_required_vnd, 1)
+            remaining_due_vnd = total_price_vnd - deposit_required_vnd
+            booking_status = "awaiting_deposit"
 
         booking_code = f"BK{token_hex(4).upper()}"
         qr_payload = f"NETUP:{booking_code}"
@@ -883,7 +889,7 @@ def create_booking(*, player_user_id: str, data: dict[str, Any]) -> dict[str, An
                   :player_user_id,
                   CAST(:mode AS public.booking_mode),
                   :seats_booked,
-                  CAST('awaiting_deposit' AS public.booking_status),
+                  CAST(:booking_status AS public.booking_status),
                   CAST(:payment_method AS public.payment_method),
                   :base_price_vnd,
                   :floor_fee_vnd,
@@ -903,6 +909,7 @@ def create_booking(*, player_user_id: str, data: dict[str, Any]) -> dict[str, An
                 "player_user_id": player_user_id,
                 "mode": mode,
                 "seats_booked": seats_booked,
+                "booking_status": booking_status,
                 "payment_method": payment_method,
                 "base_price_vnd": base_price_vnd,
                 "floor_fee_vnd": floor_fee_vnd,
@@ -921,10 +928,11 @@ def create_booking(*, player_user_id: str, data: dict[str, Any]) -> dict[str, An
             )
 
 
-        expires_at = datetime.now(UTC) + timedelta(seconds=150)
-        connection.execute(
-            text(
-                """
+        if payment_method == "vnpay":
+            expires_at = datetime.now(UTC) + timedelta(seconds=150)
+            connection.execute(
+                text(
+                    """
                 INSERT INTO public.payment_transactions (
                   booking_id,
                   kind,
@@ -947,16 +955,16 @@ def create_booking(*, player_user_id: str, data: dict[str, Any]) -> dict[str, An
                   :metadata,
                   :expires_at
                 )
-                """
-            ),
-            {
-                "booking_id": str(booking.id),
-                "external_ref": f"DEP{booking_code}",
-                "amount_vnd": deposit_required_vnd,
-                "metadata": Jsonb({"source": "booking_create"}),
-                "expires_at": expires_at,
-            },
-        )
+                    """
+                ),
+                {
+                    "booking_id": str(booking.id),
+                    "external_ref": f"DEP{booking_code}",
+                    "amount_vnd": deposit_required_vnd,
+                    "metadata": Jsonb({"source": "booking_create"}),
+                    "expires_at": expires_at,
+                },
+            )
 
         if remaining_due_vnd > 0:
             remaining_provider = "vnpay" if payment_method == "vnpay" else None
