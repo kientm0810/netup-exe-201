@@ -143,8 +143,15 @@ def test_get_admin_dashboard_metrics_endpoint(  # type: ignore[no-untyped-def]
                 "paid_amount_vnd": 12500000,
             },
             "checkins": {"total": 57, "last_7d": 19},
-            "owner_requests": {"pending": 3, "approved": 14, "rejected": 2},
-        },
+                "owner_requests": {"pending": 3, "approved": 14, "rejected": 2},
+                "commerce": {
+                    "total_revenue_vnd": 3345000,
+                    "paid_invoice_count": 17,
+                    "court_revenue_vnd": 2508750,
+                    "water_revenue_vnd": 501750,
+                    "shuttlecock_revenue_vnd": 334500,
+                },
+            },
     )
 
     response = client.get("/api/v1/admin/dashboard/metrics")

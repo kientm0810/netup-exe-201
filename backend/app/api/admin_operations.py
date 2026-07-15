@@ -75,6 +75,14 @@ class OwnerRequestMetricsResponse(BaseModel):
     rejected: int
 
 
+class CommerceMetricsResponse(BaseModel):
+    total_revenue_vnd: int
+    paid_invoice_count: int
+    court_revenue_vnd: int
+    water_revenue_vnd: int
+    shuttlecock_revenue_vnd: int
+
+
 class WebAnalyticsDailyResponse(BaseModel):
     date: date
     total_visits: int
@@ -103,6 +111,7 @@ class AdminDashboardMetricsResponse(BaseModel):
     payments: PaymentMetricsResponse
     checkins: CheckinMetricsResponse
     owner_requests: OwnerRequestMetricsResponse
+    commerce: CommerceMetricsResponse
 
 
 class AdminAuditLogResponse(BaseModel):

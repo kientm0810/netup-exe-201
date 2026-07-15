@@ -160,8 +160,15 @@ def test_admin_endpoints_smoke(  # type: ignore[no-untyped-def]
                 "paid_amount_vnd": 0,
             },
             "checkins": {"total": 0, "last_7d": 0},
-            "owner_requests": {"pending": 0, "approved": 0, "rejected": 0},
-        },
+                "owner_requests": {"pending": 0, "approved": 0, "rejected": 0},
+                "commerce": {
+                    "total_revenue_vnd": 0,
+                    "paid_invoice_count": 0,
+                    "court_revenue_vnd": 0,
+                    "water_revenue_vnd": 0,
+                    "shuttlecock_revenue_vnd": 0,
+                },
+            },
     )
     monkeypatch.setattr("app.api.admin_operations.list_admin_audit_logs", lambda **_: [])
 

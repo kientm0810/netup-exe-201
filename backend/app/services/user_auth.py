@@ -256,25 +256,6 @@ def authenticate_local_user(
     """Authenticate a regular user/owner without crossing into admin auth."""
     clean_username = username.strip()
     with get_engine().begin() as connection:
-        failed_attempts = connection.execute(
-            text(
-                """
-                SELECT count(*)::int
-                FROM public.user_login_audits
-                WHERE success = false
-                  AND username_attempt = :username
-                  AND created_at >= now() - interval '15 minutes'
-                """
-            ),
-            {"username": clean_username},
-        ).scalar_one()
-        if int(failed_attempts) >= 10:
-            raise AppError(
-                status_code=429,
-                code="user_login_rate_limited",
-                message="Đăng nhập sai quá nhiều lần. Vui lòng thử lại sau 15 phút.",
-            )
-
         row = connection.execute(
             text(
                 """

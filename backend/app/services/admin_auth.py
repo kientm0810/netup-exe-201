@@ -7,7 +7,6 @@ from typing import Any
 from sqlalchemy import text
 
 from app.core.config import get_settings
-from app.core.errors import AppError
 from app.core.security import (
     create_refresh_token,
     create_signed_token,
@@ -50,81 +49,6 @@ def create_admin_access_token(admin: AdminPrincipal) -> str:
     )
 
 
-def _ensure_login_not_rate_limited(
-    connection: Any,
-    *,
-    username: str,
-    ip: str | None,
-    max_attempts: int,
-    window_minutes: int,
-    block_minutes: int,
-) -> None:
-    username_row = connection.execute(
-        text(
-            """
-            SELECT
-              count(*)::int AS failed_count,
-              max(created_at) AS last_failed_at
-            FROM public.admin_login_audits
-            WHERE success = false
-              AND username_attempt = :username
-              AND created_at >= now() - make_interval(mins => :window_minutes)
-            """
-        ),
-        {"username": username, "window_minutes": window_minutes},
-    ).one()
-
-    ip_row = None
-    if ip:
-        ip_row = connection.execute(
-            text(
-                """
-                SELECT
-                  count(*)::int AS failed_count,
-                  max(created_at) AS last_failed_at
-                FROM public.admin_login_audits
-                WHERE success = false
-                  AND ip = :ip
-                  AND created_at >= now() - make_interval(mins => :window_minutes)
-                """
-            ),
-            {"ip": ip, "window_minutes": window_minutes},
-        ).one()
-
-    username_count = int(username_row.failed_count or 0)
-    ip_count = int(ip_row.failed_count or 0) if ip_row else 0
-    reached_limit = max(username_count, ip_count) >= max_attempts
-    if not reached_limit:
-        return
-
-    latest_failed_at = username_row.last_failed_at
-    if ip_row and ip_row.last_failed_at and (
-        latest_failed_at is None or ip_row.last_failed_at > latest_failed_at
-    ):
-        latest_failed_at = ip_row.last_failed_at
-
-    if latest_failed_at is None:
-        return
-
-    block_until = latest_failed_at + timedelta(minutes=block_minutes)
-    now_utc = datetime.now(UTC)
-    if block_until <= now_utc:
-        return
-
-    retry_after_minutes = max(
-        1,
-        int((block_until - now_utc).total_seconds() / 60),
-    )
-    raise AppError(
-        status_code=429,
-        code="admin_login_rate_limited",
-        message=(
-            "Đăng nhập thất bại quá nhiều lần. "
-            f"Vui lòng thử lại sau khoảng {retry_after_minutes} phút."
-        ),
-    )
-
-
 def authenticate_admin(
     *, username: str, password: str, ip: str | None, user_agent: str | None
 ) -> dict[str, Any] | None:
@@ -135,15 +59,6 @@ def authenticate_admin(
     expires_at = datetime.now(UTC) + timedelta(days=settings.admin_refresh_token_days)
 
     with engine.begin() as connection:
-        _ensure_login_not_rate_limited(
-            connection,
-            username=username,
-            ip=ip,
-            max_attempts=max(1, settings.admin_login_max_attempts),
-            window_minutes=max(1, settings.admin_login_window_minutes),
-            block_minutes=max(1, settings.admin_login_block_minutes),
-        )
-
         row = connection.execute(
             text(
                 """

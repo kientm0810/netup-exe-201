@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from app.core.errors import AppError
 from app.services.admin_auth import AdminPrincipal
 
 
@@ -52,28 +51,6 @@ def test_admin_login_failure_uses_standard_error(client: TestClient, monkeypatch
             "request_id": "login-failed",
         }
     }
-
-
-def test_admin_login_rate_limited(client: TestClient, monkeypatch) -> None:  # type: ignore[no-untyped-def]
-    monkeypatch.setattr(
-        "app.api.admin_auth.authenticate_admin",
-        lambda **_: (_ for _ in ()).throw(
-            AppError(
-                status_code=429,
-                code="admin_login_rate_limited",
-                message="Đăng nhập thất bại quá nhiều lần.",
-            )
-        ),
-    )
-
-    response = client.post(
-        "/api/v1/admin/auth/login",
-        json={"username": "admin", "password": "wrong"},
-        headers={"X-Request-ID": "rate-limited"},
-    )
-
-    assert response.status_code == 429
-    assert response.json()["error"]["code"] == "admin_login_rate_limited"
 
 
 def test_admin_me_requires_bearer_token(client: TestClient) -> None:

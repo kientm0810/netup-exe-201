@@ -437,6 +437,34 @@ def get_admin_dashboard_metrics(*, period_days: int = 30) -> dict[str, Any]:
                     FROM public.owner_service_requests
                     WHERE status = CAST('rejected' AS public.owner_request_status)
                   ) AS owner_requests_rejected
+                  ,(
+                    SELECT COALESCE(sum(total_vnd), 0)::bigint
+                    FROM public.sales_invoices
+                    WHERE status = 'paid'
+                  ) AS commerce_total_revenue_vnd,
+                  (
+                    SELECT count(*)::int
+                    FROM public.sales_invoices
+                    WHERE status = 'paid'
+                  ) AS commerce_paid_invoice_count,
+                  (
+                    SELECT COALESCE(sum(item.line_total_vnd) FILTER (WHERE item.item_type = 'court_rental'), 0)::bigint
+                    FROM public.sales_invoice_items item
+                    JOIN public.sales_invoices invoice ON invoice.id = item.invoice_id
+                    WHERE invoice.status = 'paid'
+                  ) AS commerce_court_revenue_vnd,
+                  (
+                    SELECT COALESCE(sum(item.line_total_vnd) FILTER (WHERE item.item_type = 'water'), 0)::bigint
+                    FROM public.sales_invoice_items item
+                    JOIN public.sales_invoices invoice ON invoice.id = item.invoice_id
+                    WHERE invoice.status = 'paid'
+                  ) AS commerce_water_revenue_vnd,
+                  (
+                    SELECT COALESCE(sum(item.line_total_vnd) FILTER (WHERE item.item_type = 'shuttlecock'), 0)::bigint
+                    FROM public.sales_invoice_items item
+                    JOIN public.sales_invoices invoice ON invoice.id = item.invoice_id
+                    WHERE invoice.status = 'paid'
+                  ) AS commerce_shuttlecock_revenue_vnd
                 """
             )
         ).one()
@@ -464,6 +492,13 @@ def get_admin_dashboard_metrics(*, period_days: int = 30) -> dict[str, Any]:
             "pending": int(row.owner_requests_pending),
             "approved": int(row.owner_requests_approved),
             "rejected": int(row.owner_requests_rejected),
+        },
+        "commerce": {
+            "total_revenue_vnd": int(row.commerce_total_revenue_vnd),
+            "paid_invoice_count": int(row.commerce_paid_invoice_count),
+            "court_revenue_vnd": int(row.commerce_court_revenue_vnd),
+            "water_revenue_vnd": int(row.commerce_water_revenue_vnd),
+            "shuttlecock_revenue_vnd": int(row.commerce_shuttlecock_revenue_vnd),
         },
     }
 

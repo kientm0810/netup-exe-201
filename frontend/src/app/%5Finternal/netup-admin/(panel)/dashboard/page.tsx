@@ -57,6 +57,13 @@ type AdminDashboardMetrics = {
     approved: number;
     rejected: number;
   };
+  commerce: {
+    total_revenue_vnd: number;
+    paid_invoice_count: number;
+    court_revenue_vnd: number;
+    water_revenue_vnd: number;
+    shuttlecock_revenue_vnd: number;
+  };
 };
 
 type AuditLog = {
@@ -369,6 +376,23 @@ export default function AdminDashboardPage() {
           helper={`${metrics?.owner_requests.approved ?? 0} đã duyệt`}
         />
       </section>
+
+      <Card className="space-y-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-red-800">Doanh thu chủ sân</p>
+            <h2 className="mt-2 font-heading text-xl font-semibold text-ink">Doanh thu đã ghi nhận trên hệ thống</h2>
+            <p className="mt-1 text-sm text-slate-600">Bao gồm tiền thuê sân, nước uống và cầu lông từ các hóa đơn đã thanh toán.</p>
+          </div>
+          <Badge tone="success">{formatNumber(metrics?.commerce.paid_invoice_count)} hóa đơn</Badge>
+        </div>
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard label="Tổng doanh thu" value={formatVnd(metrics?.commerce.total_revenue_vnd)} helper="Hóa đơn đã thanh toán" tone="accent" />
+          <StatCard label="Thuê sân" value={formatVnd(metrics?.commerce.court_revenue_vnd)} helper="Doanh thu sân" />
+          <StatCard label="Nước uống" value={formatVnd(metrics?.commerce.water_revenue_vnd)} helper="Bán tại quầy" tone="success" />
+          <StatCard label="Cầu lông" value={formatVnd(metrics?.commerce.shuttlecock_revenue_vnd)} helper="Bán tại quầy" tone="warning" />
+        </section>
+      </Card>
 
       <section className="grid gap-5 lg:grid-cols-[320px_1fr]">
         <Card className="space-y-4">
